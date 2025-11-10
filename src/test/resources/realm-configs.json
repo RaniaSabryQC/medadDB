@@ -1,0 +1,26 @@
+{
+  "realms": [
+    {
+      "realm": "medad-allow",
+      "enabled": true,
+      "registrationAllowed": true,
+      "loginTheme": "medad-theme-v5",
+      "eventsListeners": ["jboss-logging"],
+      "adminEventsEnabled": true,
+      "adminEventsDetailsEnabled": true
+    },
+    {
+      "realm": "medad-deny",
+      "enabled": true,
+      "registrationAllowed": false,
+      "loginTheme": "medad-theme-v5",
+      "eventsListeners": ["jboss-logging"],
+      "adminEventsEnabled": true,
+      "adminEventsDetailsEnabled": true
+    }
+  ],
+  "realmMapping": {
+    "register": "medad-allow",
+    "not allow register": "medad-deny"
+  }
+}

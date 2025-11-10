@@ -18,7 +18,7 @@
             <dependency>
                 <groupId>org.keycloak</groupId>
                 <artifactId>keycloak-parent</artifactId>
-                <version> 26.4.1</version>
+                <version>26.4.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -28,7 +28,7 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-core</artifactId>
-            <version> 26.4.1</version>
+            <version>26.4.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -39,20 +39,32 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-services</artifactId>
-            <version> 26.4.1</version>
+            <version>26.4.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-server-spi</artifactId>
-            <version> 26.4.1</version>
+            <version>26.4.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-server-spi-private</artifactId>
-            <version> 26.4.1</version>
+            <version>26.4.1</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.18</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.slf4j</groupId>
+            <artifactId>slf4j-jboss-logmanager</artifactId>
+            <version>2.0.0.Final</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.parsson</groupId>
@@ -117,6 +129,24 @@
             <artifactId>jboss-logmanager</artifactId>
             <version>3.1.2.Final</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>medadIdentity</groupId>
+            <artifactId>medadDB</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>7.11.0</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- JAX-RS API (for javax.ws.rs.* classes) -->
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>2.1.1</version>
         </dependency>
     </dependencies>
     <build>

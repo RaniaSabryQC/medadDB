@@ -1,3 +1,5 @@
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.KeycloakBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -33,14 +35,14 @@ public class DBContainer {
             }
         }
     }
+
     private static final Logger logger = LoggerFactory.getLogger(DBContainer.class);
 
     private static Network network;
     private static MySQLContainer<?> database;
     private static final String DB_NETWORK_ALIAS = "mysql";
     private static String MEDAD_IDENTITY_BASE_URL;
-
-
+    private static Keycloak keycloakAdmin;
 
 
 //    @SuppressWarnings("resource")
@@ -127,16 +129,14 @@ public class DBContainer {
     static void setupMedadIdentity() {
         network = Network.newNetwork(); // Create network first
 
-        database = new MySQLContainer<>("mysql:5.7")
+        database = new MySQLContainer<>("mysql:8.0")
                 .withNetwork(network)
                 .withNetworkAliases(DB_NETWORK_ALIAS)
                 .withDatabaseName("keycloak_db")
                 .withUsername("keycloak_user")
                 .withPassword("keycloak_password")
                 .waitingFor(Wait.forLogMessage(".*ready for connections.*\\n", 1));
-
         database.start();
-
         // Use the alias directly
         String jdbcUrl = String.format(
                 "jdbc:mysql://%s:%d/%s",
@@ -147,21 +147,55 @@ public class DBContainer {
 
         System.out.println("Database JDBC URL: " + jdbcUrl);
 
-        GenericContainer<?> keycloak = 	new GenericContainer<>("quay.io/keycloak/keycloak:21.0.1")
+
+        GenericContainer<?> keycloak = new GenericContainer<>("quay.io/keycloak/keycloak:21.0.1")
                 .withNetwork(network)
-                .withEnv("KC_DB", "mysql")
-                .withEnv("KC_DB_URL", "jdbc:mysql://mysql:3306/keycloak_db")
-                .withEnv("KC_DB_USERNAME", "keycloak_user")
-                .withEnv("KC_DB_PASSWORD", "keycloak_password")
+                .withNetworkAliases("keycloak")
+                .withExposedPorts(8443, 8080)
+                .dependsOn(database)
+                .withEnv("KC_HTTPS_PORT", "8443")
+                .withEnv("KC_HTTP_PORT", "8080")
+                .withEnv("KC_HTTP_ENABLED", "true")
+                // required admin credentials for Keycloak >=21
                 .withEnv("KEYCLOAK_ADMIN", "admin")
                 .withEnv("KEYCLOAK_ADMIN_PASSWORD", "admin")
+                // MySQL configuration
+                .withEnv("KC_DB", "mysql")
+                .withEnv("KC_DB_URL", jdbcUrl)
+                .withEnv("KC_DB_USERNAME", "keycloak_user")
+                .withEnv("KC_DB_PASSWORD", "keycloak_password")
+                // tell the image to run in dev/start mode
                 .withCommand("start-dev")
-                .waitingFor(Wait.forLogMessage(".*Running the server in development mode.*\\n", 1))
+                .waitingFor(
+                        Wait.forHttp("/admin/master/console")
+                                .forPort(8080)
+                                .withStartupTimeout(Duration.ofMinutes(5))
+                )
                 .withLogConsumer(new Slf4jLogConsumer(logger).withPrefix("KEYCLOAK"));
 
         keycloak.start();
         System.out.println("Keycloak started with URL: http://" + keycloak.getHost() + ":" + keycloak.getMappedPort(8080));
+
+        MEDAD_IDENTITY_BASE_URL = String.format(
+                "http://%s:%d",
+                keycloak.getHost(),
+                keycloak.getMappedPort(
+                        Integer.parseInt(keycloak.getEnvMap().getOrDefault("KC_HTTP_PORT", "8080"))
+                )
+        );
+        System.out.printf("Medad Identity Base URL: %s%n", MEDAD_IDENTITY_BASE_URL);
+
+        // Initialize Keycloak admin client
+            keycloakAdmin = KeycloakBuilder.builder()
+                    .serverUrl(MEDAD_IDENTITY_BASE_URL)
+                    .realm("master")
+                    .clientId("admin-cli")
+                    .username("admin")
+                    .password("admin")
+                    .build();
+
     }
+
     @Test
     @DisplayName("Test 1: Database Connection")
     void testDatabaseConnection() {
