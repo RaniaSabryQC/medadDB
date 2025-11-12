@@ -13,10 +13,7 @@ import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.UriBuilder;
 import org.junit.Assert;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 
@@ -42,7 +39,8 @@ import java.time.Duration;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-
+@Epic("Keycloak Authentication")
+@Feature("User Login")
 public class BaseTest {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseTest.class);
@@ -294,7 +292,12 @@ public class BaseTest {
 
 
     @Test
-    @Description("Test E2E integration UAE PASS")
+    @DisplayName("Successful login with valid credentials")
+    @Description("This test verifies that a user can successfully log in using valid username and password through UAE Pass integration")
+    @Severity(SeverityLevel.CRITICAL)
+    @Story("User Authentication")
+    @Link(name = "Requirement", url = "https://jira.example.com/browse/REQ-123")
+    @Issue("TICKET-456")
     public void testCompleteKeycloakSetup() throws IOException {
         System.out.println("\n=== Complete Keycloak Setup Test ===");
 
