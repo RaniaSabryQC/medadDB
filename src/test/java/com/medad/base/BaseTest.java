@@ -3,29 +3,45 @@ package com.medad.base;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.medad.config.EnvironmentConfig;
 import com.medad.utils.ClientManager;
+import com.medad.utils.IdentityProviderManager;
 import com.medad.utils.RealmConfigurationClientManager;
+import com.medad.utils.UserManager;
+import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.AriaRole;
+import io.qameta.allure.*;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.core.UriBuilder;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
-import org.keycloak.admin.client.resource.RealmResource;
-import org.keycloak.admin.client.resource.UsersResource;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.MountableFile;
+import org.testcontainers.images.builder.ImageFromDockerfile;
 
+import org.wiremock.integrations.testcontainers.WireMockContainer;
+
+import java.awt.*;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
+
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+
 
 public class BaseTest {
 
@@ -34,6 +50,7 @@ public class BaseTest {
 
     // Medad Identity setup
     private static String MEDAD_IDENTITY_BASE_URL;
+    protected static String testRealmName;
 
     // Database network alias
     private static final String DB_NETWORK_ALIAS = "mysql";
@@ -42,8 +59,35 @@ public class BaseTest {
     private static Keycloak keycloakAdmin;
     protected static RealmConfigurationClientManager realmConfigManager;
     protected static ClientManager clientManager;
+    protected static IdentityProviderManager identityProviderManager;
+    protected static UserManager userManager;
 
-    protected static String testRealmName;
+
+    // UAE Pass setup
+    private static String UAE_PASS_INTERNAL_BASE_URL;
+    private static String UAE_PASS_HOST_BASE_URL;
+    private static final String UAE_PASS_NETWORK_ALIAS = "uaepass";
+    private final static String UAE_PASS_DISPLAY_NAME = "UAE Pass";
+    private final static String UAE_PASS_ALIAS = "uaepass";
+    private final static String TEST_UAEPASS_CLIENT_ID = "uaepass-client";
+    private final static String TEST_UAEPASS_CLIENT_SECRET = "uaepass-client-secret";
+
+    // Represents relying party (i.e. OpenID Connect client)
+    private static Client relyingPartyHTTPClient;
+    private final static String TEST_CLIENT_ID = "test-client";
+    private final static String TEST_CLIENT_NAME = "Test Client";
+    private final static String TEST_CLIENT_SECRET = "123xyz";
+    private static String TEST_CLIENT_BASE_URL;
+    private final static String TEST_CLIENT_OIDC_CALLBACK_PATH = "/openid-connect/callback";
+    private static String TEST_CLIENT_OIDC_CALLBACK_URL;
+    private final static String TEST_STATE = "some_random_state";
+
+    // Represents user browser (i.e. OpenID Connect user agent)
+    private static Playwright playwright;
+    private static Browser browser;
+    private BrowserContext context;
+    private Page page;
+
 
     // MySQL Container setup
     @SuppressWarnings("resource")
@@ -60,7 +104,7 @@ public class BaseTest {
     //keycloak container setup can be added here
     @SuppressWarnings("resource")
     private static final GenericContainer<?> medadIdentity =
-            new GenericContainer<>("quay.io/keycloak/keycloak:21.0.1")
+            new GenericContainer<>(new ImageFromDockerfile().withFileFromPath(".", Path.of(".")))
                     .withNetwork(network)
                     .withExposedPorts(
                             Integer.parseInt(EnvironmentConfig.DOTENV.get("KC_HTTP_PORT")),
@@ -73,7 +117,6 @@ public class BaseTest {
                     .withEnv("KEYCLOAK_ADMIN", EnvironmentConfig.DOTENV.get("KC_BOOTSTRAP_ADMIN_USERNAME"))
                     .withEnv("KEYCLOAK_ADMIN_PASSWORD", EnvironmentConfig.DOTENV.get("KC_BOOTSTRAP_ADMIN_PASSWORD"))
                     .withEnv("KC_DB", "mysql")
-                    .withCommand("start-dev")
                     .withEnv("KC_DB_URL", String.format(
                             "jdbc:mysql://%s:%d/%s",
                             DB_NETWORK_ALIAS,
@@ -89,10 +132,30 @@ public class BaseTest {
                                     .withStartupTimeout(Duration.ofMinutes(6)))
                     .withLogConsumer(new Slf4jLogConsumer(logger).withPrefix("KEYCLOAK"));
 
+    private static final WireMockContainer uaepass =
+            new WireMockContainer("wiremock/wiremock:3.13.1")
+                    .withNetwork(network)
+                    .withNetworkAliases(UAE_PASS_NETWORK_ALIAS)
+                    .withExposedPorts(8080)
+                    .withEnv("WIREMOCK_OPTIONS", "--global-response-templating --verbose")
+                    .withClasspathResourceMapping("uaepass", "/home/wiremock", BindMode.READ_ONLY)
+                    .waitingFor(Wait.forHttp("/__admin/mappings"))
+                    .withLogConsumer(new Slf4jLogConsumer(logger).withPrefix("UAEPASS-WIREMOCK"));
+
+    private static final WireMockContainer relyingParty =
+            new WireMockContainer("wiremock/wiremock:3.13.1")
+                    .withExposedPorts(8080)
+                    .withEnv("WIREMOCK_OPTIONS", "--global-response-templating --verbose")
+                    .withClasspathResourceMapping("relying_party", "/home/wiremock", BindMode.READ_ONLY)
+                    .waitingFor(Wait.forHttp("/__admin/mappings"))
+                    .withLogConsumer(new Slf4jLogConsumer(logger).withPrefix("RELYING-PARTY-WIREMOCK"));
+
 
 
 
     @BeforeAll
+    @Description("Setup DataBase")
+    @Step("Step 1: Setup DataBase")
     static void setDatabase(){
         database.start();
         String jdbcUrl = String.format(
@@ -104,6 +167,17 @@ public class BaseTest {
         logger.info(",JDBC URL: {}", jdbcUrl);
         logger.info("Database started at URL: {}", database.getJdbcUrl());
 
+
+        // Initialize RealmConfigurationManager and take username and password from env variables
+        setupKeycloakAdmin();
+        initializeManagers();
+
+    }
+    @BeforeAll
+    @Description("Setup Medad Container")
+    @Step("Step 2: Setup MedadIdentity ")
+    static void setupMedadIdentity() {
+
         medadIdentity.start();
 
         MEDAD_IDENTITY_BASE_URL = String.format(
@@ -114,14 +188,49 @@ public class BaseTest {
                 )
         );
         logger.info("keycloak Medad Identity url: {}",MEDAD_IDENTITY_BASE_URL);
-
-        // Initialize RealmConfigurationManager and take username and password from env variables
-        setupKeycloakAdmin();
-        initializeManagers();
-
-
-
     }
+
+
+    @BeforeAll
+    @Description("Setup UAE Pass")
+    @Step("Step 3: Setup UAE PASS ")
+    static void setupUAEPass() {
+        uaepass.start();
+        UAE_PASS_HOST_BASE_URL = uaepass.getUrl("/idshub");
+        UAE_PASS_INTERNAL_BASE_URL = String.format(
+                "http://%s:%d/idshub",
+                UAE_PASS_NETWORK_ALIAS,
+                8080
+        );
+        logger.info("UAE Pass host URL: {}", UAE_PASS_HOST_BASE_URL);
+        logger.info("UAE Pass internal URL: {}", UAE_PASS_INTERNAL_BASE_URL);
+    }
+
+    @BeforeAll
+    @Description("Setup Response URL")
+    @Step("Step 4: Setup Response URL")
+    static void setupRelyingParty() {
+        relyingParty.start();
+        TEST_CLIENT_BASE_URL = relyingParty.getBaseUrl();
+        TEST_CLIENT_OIDC_CALLBACK_URL	= relyingParty.getUrl(TEST_CLIENT_OIDC_CALLBACK_PATH);
+        relyingPartyHTTPClient = ClientBuilder.newClient();
+        logger.info("Relying Party client initialized");
+    }
+
+    @BeforeAll
+    @Description("Setup Browser")
+    @Step("Step 5: Setup Browser")
+    static void setupUserAgent() {
+        playwright = Playwright.create();
+        browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(false).setSlowMo(500));
+    }
+
+    @BeforeEach
+    void setupUserBrowser() {
+        context = browser.newContext();
+        page = context.newPage();
+    }
+
 
     protected static void setupKeycloakAdmin() {
         keycloakAdmin = KeycloakBuilder.builder()
@@ -133,61 +242,67 @@ public class BaseTest {
                 .build();
         logger.info("Keycloak Admin client initialized");
     }
-
     private static void initializeManagers() {
         System.out.println("\nInitializing managers...");
 
         realmConfigManager = new RealmConfigurationClientManager(keycloakAdmin);
         clientManager = new ClientManager(keycloakAdmin);
-//        identityProviderManager = new IdentityProviderManager(keycloak);
-//        userManager = new UserManager(keycloak);
+       identityProviderManager = new IdentityProviderManager(keycloakAdmin);
+       userManager = new UserManager(keycloakAdmin);
 
         System.out.println("✓ All managers initialized");
     }
 
+    /**
+     *  getter and setter method for manage class data
+     * */
+
+    protected String getKeycloakBaseUrl() {
+        return MEDAD_IDENTITY_BASE_URL;
+    }
     protected static RealmConfigurationClientManager getRealmConfigManager() {
         return realmConfigManager;  // Returns the instance created above
     }
-    protected static ClientManager getClientManager()
-    {
+    protected static ClientManager getClientManager() {
         return clientManager;
     }
+    protected static IdentityProviderManager getIdentityProviderManager() {
+        return identityProviderManager;
+    }
+    protected static UserManager getUserManager(){
+        return userManager;
+    }
 
-
-    @Test
-    @DisplayName("Test 1: Database Connection")
-    void testDatabaseConnection() {
-        logger.info("Running test: Database Connection");
+    /**
+     * Open browser automatically
+     */
+    private void openBrowser(String url) {
+        try {
+            if (Desktop.isDesktopSupported()) {
+                Desktop desktop = Desktop.getDesktop();
+                desktop.browse(new URI(url));
+                System.out.println("✓ Opening browser: " + url);
+            } else {
+                System.out.println("⚠ Auto-open not supported. Please open manually: " + url);
+            }
+        } catch (Exception e) {
+            System.out.println("⚠ Could not open browser automatically.");
+            System.out.println("  Please open manually: " + url);
+        }
     }
 
 
-    public static void testCreateRealm() {
-
-        realmConfigManager = new RealmConfigurationClientManager(keycloakAdmin);
-
-         //Step 1: Create realm using our utility
-        System.out.println("✓ Creating realm from configuration");
-
-        JsonNode realmNode = getRealmConfigManager().getRealmNodeByName("realm-configs.json", "medad-allow");
-        testRealmName = realmNode.get("realm").asText();
-
-        getRealmConfigManager().createRealmFromNode(realmNode);
-        System.out.println("✓ Realm created: " + testRealmName);
-
-        // Step 2: Verify users in the created realm
-        System.out.println("✓ Verifying users in realm: " + testRealmName);
-        //RealmResource realmResource = keycloakAdmin.realm(testRealmName);
-    }
 
     @Test
-    public void testCompleteKeycloakSetup() {
+    @Description("Test E2E integration UAE PASS")
+    public void testCompleteKeycloakSetup() throws IOException {
         System.out.println("\n=== Complete Keycloak Setup Test ===");
 
         // Step 1: Create Realm
         System.out.println("\nStep 1: Creating realm...");
+        //take label from jason file
         JsonNode realmNode = getRealmConfigManager().getRealmNodeByName("realm-configs.json", "medad-allow");
         testRealmName = realmNode.get("realm").asText();
-
         boolean realmCreated = getRealmConfigManager().createRealmFromNode(realmNode);
         Assert.assertTrue("Realm should be created", realmCreated);
         System.out.println("✓ Realm created: " + testRealmName);
@@ -195,49 +310,81 @@ public class BaseTest {
         // Step 2: Create Client
         System.out.println("\nStep 2: Creating client...");
         boolean clientCreated = getClientManager().createClient(
-                testRealmName,
-                "my-app", Arrays.asList("http://localhost:3000/*", "http://localhost:3000/callback")
-        );
+                testRealmName,TEST_CLIENT_ID,TEST_CLIENT_NAME,TEST_CLIENT_SECRET
+                ,TEST_CLIENT_OIDC_CALLBACK_URL);
         Assert.assertTrue("Client should be created", clientCreated);
         System.out.println("✓ Client 'my-app' created");
 
-        /// /////////////////////////////////////////////
-        /// /////to do.... complete realm setup user and identity provider
-        /// /////////////////////////////////////////////
-//
-//        // Step 3: Create UAE Pass Identity Provider
-//        System.out.println("\nStep 3: Creating UAE Pass identity provider...");
-//        boolean idpCreated = getIdentityProviderManager().createUAEPassIdentityProvider(
-//                testRealmName,
-//                "uae-pass-client-id",
-//                "uae-pass-client-secret",
-//                "https://stg-id.uaepass.ae/idshub/authorize",
-//                "https://stg-id.uaepass.ae/idshub/token"
-//        );
-//        Assert.assertTrue(idpCreated, "Identity provider should be created");
-//        System.out.println("✓ UAE Pass identity provider created");
-//
-//        // Step 4: Create Test User
-//        System.out.println("\nStep 4: Creating test user...");
-//        boolean userCreated = getUserManager().createUser(
-//                testRealmName,
-//                "testuser",
-//                "testuser@example.com",
-//                "Test",
-//                "User",
-//                "Test@1234"
-//        );
-//        Assert.assertTrue(userCreated, "User should be created");
-//        System.out.println("✓ User 'testuser' created");
-//
-//        // Step 5: Verify everything exists
-//        System.out.println("\nStep 5: Verifying setup...");
-//        Assert.assertTrue(getRealmManager().realmExists(testRealmName));
-//        Assert.assertTrue(getClientManager().clientExists(testRealmName, "my-app"));
-//        Assert.assertTrue(getIdentityProviderManager().identityProviderExists(testRealmName, "uae-pass"));
-//        Assert.assertTrue(getUserManager().userExists(testRealmName, "testuser"));
+
+        // Step 3: Create UAE Pass Identity Provider
+        System.out.println("\nStep 3: Creating UAE Pass identity provider...");
+        JsonNode idpNode = getIdentityProviderManager().getIdentityProviderNodeByAlias("idp-configs.json", "uaepass");
+        System.out.println("=============================="+idpNode);
+        boolean idpUaPassCreated= getIdentityProviderManager().createIdentityProviderFromNodeWithUrls(testRealmName, idpNode, UAE_PASS_HOST_BASE_URL, UAE_PASS_INTERNAL_BASE_URL);
+        Assert.assertTrue("UAE Pass identity provider should be created", idpUaPassCreated);
+        System.out.println("✓ UAE Pass identity provider created");
+
+
+        // Step 4: Create Test User
+        System.out.println("\nStep 4: Creating test user...");
+        JsonNode userNode = getUserManager().getUserNodeByUsername("users.json", "testuser1");
+        System.out.println("=============================="+userNode);
+        String userID = getUserManager().createUserFromNode(testRealmName, userNode);
+        boolean hasFedLink = getUserManager().hasFederatedIdentity(testRealmName, userID, "uaepass");
+        assertTrue(hasFedLink, "User should have federated identity link");
+        System.out.println("✓ Federated identity link verified");
+        System.out.println("=============================="+userID);
+
+        Assert.assertNotNull("User should be created", userID);
+        System.out.println("✓ User 'testuser' created"+userID);
+
+        // Step 5: Verify everything exists
+        System.out.println("\nStep 5: Verifying setup...");
+        Assert.assertTrue(getRealmConfigManager().realmExists(testRealmName));
+        Assert.assertTrue(getClientManager().clientExists(testRealmName, "test-client"));
+        Assert.assertTrue(getIdentityProviderManager().identityProviderExists(testRealmName, "uaepass"));
+        Assert.assertTrue(getUserManager().userExists(testRealmName, "testuser1"));
 
         System.out.println("✓ All components verified");
         System.out.println("\n=== Complete Setup Test PASSED ===");
+
+       openBrowser(MEDAD_IDENTITY_BASE_URL);
+
+
+        // Wait for manual verification
+//        System.out.println("\n⏸  Press Enter after verifying in browser...");
+//        System.in.read();
+
+        System.out.println("✓ Visual verification complete!");
+
+        System.out.println("==========================================================================");
+
+        UriBuilder baseOidcUriBuilder = UriBuilder.fromUri(MEDAD_IDENTITY_BASE_URL)
+                .path("realms")
+                .path(testRealmName)
+                .path("protocol")
+                .path("openid-connect");
+
+        String authUrl = baseOidcUriBuilder.clone()
+                .path("auth")
+                .queryParam("response_type", "code")
+                .queryParam("redirect_uri", TEST_CLIENT_OIDC_CALLBACK_URL)
+                .queryParam("state", TEST_STATE)
+                .queryParam("client_id", TEST_CLIENT_ID)
+                .queryParam("scope", "openid profile email")
+                .build()
+                .toString();
+
+        System.out.println("-----------------------------"+ authUrl);
+
+        page.navigate(authUrl);
+
+        page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName(UAE_PASS_DISPLAY_NAME).setExact(true)).click();
+        page.waitForURL(TEST_CLIENT_OIDC_CALLBACK_URL + "**");
+
+
     }
+
+
+
 }

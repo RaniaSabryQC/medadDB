@@ -1,0 +1,41 @@
+{
+  "users": [
+    {
+      "username": "testuser1",
+      "email": "john_doe@gmail.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "password": "Password123!",
+      "enabled": true,
+      "emailVerified": true,
+      "federatedIdentity": {
+        "identityProvider": "uaepass",
+        "federatedUserId": "ca33aa7b-0c2f-4e8e-9b22-2eafe1f9234c",
+        "federatedUsername": "ca33aa7b-0c2f-4e8e-9b22-2eafe1f9234c"
+      }
+    },
+    {
+      "username": "testuser2",
+      "email": "testuser2@example.com",
+      "firstName": "Test",
+      "lastName": "User Two",
+      "password": "SecurePass456!",
+      "enabled": true,
+      "emailVerified": false
+    },
+    {
+      "username": "adminuser",
+      "email": "admin@example.com",
+      "firstName": "Admin",
+      "lastName": "User",
+      "password": "AdminPass789!",
+      "enabled": true,
+      "emailVerified": true
+    }
+  ],
+  "userMappings": {
+    "user1": "testuser1",
+    "user2": "testuser2",
+    "admin": "adminuser"
+  }
+}

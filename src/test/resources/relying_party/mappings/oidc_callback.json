@@ -1,0 +1,13 @@
+{
+	"request": {
+		"method": "GET",
+		"urlPathPattern": "/openid-connect/callback"
+	},
+	"response": {
+		"status": 200,
+		"headers": {
+			"Content-Type": "text/html"
+		},
+		"bodyFileName": "oidc_callback_response.html"
+	}
+}

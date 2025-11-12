@@ -6,11 +6,13 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>22</maven.compiler.source>
-        <maven.compiler.target>22</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Define Keycloak version so dependencyManagement import resolves -->
         <keycloak.version>26.4.1</keycloak.version>
+        <allure.version>2.24.0</allure.version>
+        <aspectj.version>1.9.24</aspectj.version>
     </properties>
 
     <dependencyManagement>
@@ -18,7 +20,7 @@
             <dependency>
                 <groupId>org.keycloak</groupId>
                 <artifactId>keycloak-parent</artifactId>
-                <version>26.4.1</version>
+                <version>${keycloak.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -28,7 +30,7 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-core</artifactId>
-            <version>26.4.1</version>
+            <version>${keycloak.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -39,26 +41,20 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-services</artifactId>
-            <version>26.4.1</version>
+            <version>${keycloak.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-server-spi</artifactId>
-            <version>26.4.1</version>
+            <version>${keycloak.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-server-spi-private</artifactId>
-            <version>26.4.1</version>
+            <version>${keycloak.version}</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.5.18</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.slf4j</groupId>
@@ -77,11 +73,17 @@
             <version>5.13.4</version>
             <scope>test</scope>
         </dependency>
+        <!-- Allure JUnit 5 adapter -->
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-params</artifactId>
-            <version>5.13.4</version>
-            <scope>test</scope>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-junit5</artifactId>
+            <version>${allure.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-jboss-logmanager</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
@@ -131,12 +133,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>medadIdentity</groupId>
-            <artifactId>medadDB</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>7.11.0</version>
@@ -148,6 +144,17 @@
             <artifactId>javax.ws.rs-api</artifactId>
             <version>2.1.1</version>
         </dependency>
+        <!-- Allure Core -->
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-java-commons</artifactId>
+            <version>${allure.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -155,11 +162,15 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.0</version>
+            </plugin>
+
+            <plugin>
+                <groupId>io.qameta.allure</groupId>
+                <artifactId>allure-maven</artifactId>
+                <version>2.12.0</version>
                 <configuration>
-                    <compilerArgs>
-                        <arg>-Xlint</arg>
-                    </compilerArgs>
-                    <verbose>true</verbose>
+                    <reportVersion>${allure.version}</reportVersion>
+                    <resultsDirectory>${project.build.directory}/allure-results</resultsDirectory>
                 </configuration>
             </plugin>
             <!-- Configure Surefire to set the logging manager early for forked test JVMs -->
@@ -174,12 +185,22 @@
                         <artifactId>jboss-logmanager</artifactId>
                         <version>3.1.2.Final</version>
                     </dependency>
+                    <!-- Add AspectJ weaver for Allure -->
+                    <dependency>
+                        <groupId>org.aspectj</groupId>
+                        <artifactId>aspectjweaver</artifactId>
+                        <version>${aspectj.version}</version>
+                    </dependency>
                 </dependencies>
+
                 <configuration>
-                    <!-- Ensure JVM that runs tests uses JBoss LogManager -->
-                    <argLine>-Djava.util.logging.manager=org.jboss.logmanager.LogManager</argLine>
-                    <!-- Load plugin dependencies (jboss-logmanager) into the test JVM early by disabling the system classloader -->
-                    <useSystemClassLoader>false</useSystemClassLoader>
+                    <!-- IMPORTANT: Combine BOTH configurations in argLine -->
+                    <argLine>
+                        -Djava.util.logging.manager=org.jboss.logmanager.LogManager
+                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"
+                    </argLine>
+                    <!-- Keep your existing settings -->
+                    <useSystemClassLoader>true</useSystemClassLoader>
                     <forkCount>1</forkCount>
                     <reuseForks>true</reuseForks>
                 </configuration>
@@ -205,7 +226,7 @@
                     <!-- same JVM property for integration tests run by Failsafe -->
                     <argLine>-Djava.util.logging.manager=org.jboss.logmanager.LogManager</argLine>
                     <!-- ensure Failsafe also disables system classloader so the test JVM picks up plugin dependencies early -->
-                    <useSystemClassLoader>false</useSystemClassLoader>
+                    <useSystemClassLoader>true</useSystemClassLoader>
                 </configuration>
             </plugin>
         </plugins>

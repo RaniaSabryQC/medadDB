@@ -1,0 +1,13 @@
+{
+	"request": {
+		"method": "GET",
+		"urlPath": "/authenticationendpoint/retry.do"
+	},
+	"response": {
+		"status": 200,
+		"headers": {
+			"Content-Type": "text/html"
+		},
+		"bodyFileName": "error.html"
+	}
+}

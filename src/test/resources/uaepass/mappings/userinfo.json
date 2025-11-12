@@ -1,0 +1,45 @@
+{
+	"mappings": [
+		{
+			"priority": 1,
+			"request": {
+				"method": "GET",
+				"url": "/idshub/userinfo",
+				"headers": {
+					"Authorization": {
+						"doesNotMatch": "Bearer 2947c6c6-f735-385c-ac4d-7bc5fe8de195"
+					}
+				}
+			},
+			"response": {
+				"status": 401,
+				"headers": {
+					"Content-Type": "application/json"
+				},
+				"jsonBody": {
+					"error": "invalid_token",
+					"error_description": "Access token validation failed"
+				}
+			}
+		},
+		{
+			"priority": 10,
+			"request": {
+				"method": "GET",
+				"url": "/idshub/userinfo",
+				"headers": {
+					"Authorization": {
+						"equalTo": "Bearer 2947c6c6-f735-385c-ac4d-7bc5fe8de195"
+					}
+				}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"Content-Type": "application/json"
+				},
+				"bodyFileName": "userinfo-response.json"
+			}
+		}
+	]
+}

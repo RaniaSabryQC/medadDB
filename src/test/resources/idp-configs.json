@@ -1,0 +1,62 @@
+{
+  "identityProviders": [
+    {
+      "alias": "uaepass",
+      "displayName": "UAE Pass",
+      "providerId": "uaepass",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "config": {
+        "clientId": "uaepass-client",
+        "clientSecret": "uaepass-client-secret",
+        "authorizationUrl": "${uaepass.base.url}/authorize",
+        "tokenUrl": "${uaepass.internal.url}/token",
+        "userInfoUrl": "${uaepass.internal.url}/userinfo",
+        "logoutUrl": "${uaepass.base.url}/logout",
+        "generalMinAccountType": "SOP1: Basic Account",
+        "autoLinkingEnabled": "true",
+        "autoLinkingMinAccountType": "SOP1: Basic Account",
+        "autoLinkingLevel": "4 | Only Email Address",
+        "manualLinkingEnabled": "true",
+        "manualLinkingMinAccountType": "SOP1: Basic Account",
+        "registrationMinAccountType": "SOP1: Basic Account",
+        "defaultScope": "openid profile email",
+        "syncMode": "FORCE",
+        "defaultAcrValues": "urn:safelayer:tws:policies:authentication:level:low"
+      }
+    },
+    {
+      "alias": "uaepass-staging-2",
+      "displayName": "UAE Pass - Staging 2",
+      "providerId": "uaepass",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "config": {
+        "clientId": "sandbox_stage",
+        "clientSecret": "sandbox_stage",
+        "authorizationUrl": "${uaepass.base.url}/realms/${realm.name}/protocol/openid-connect/auth",
+        "tokenUrl": "${uaepass.internal.url}/realms/${realm.name}/protocol/openid-connect/token",
+        "userInfoUrl": "${uaepass.internal.url}/realms/${realm.name}/protocol/openid-connect/userinfo",
+        "issuer": "${uaepass.base.url}/realms/${realm.name}",
+        "jwksUrl": "${uaepass.base.url}/realms/${realm.name}/protocol/openid-connect/certs",
+        "generalMinAccountType": "SOP1: Basic Account",
+        "autoLinkingEnabled": "true",
+        "autoLinkingMinAccountType": "SOP2: Basic Account",
+        "autoLinkingLevel": "4 | Only Email Address",
+        "manualLinkingEnabled": "false",
+        "manualLinkingMinAccountType": "SOP1: Basic Account",
+        "registrationMinAccountType": "SOP3: Qualified Account",
+        "defaultScope": "openid profile email",
+        "clientAuthMethod": "client_secret_post",
+        "syncMode": "Force",
+        "defaultAcrValues": "urn:safelayer:tws:policies:authentication:level:low"
+      }
+    }
+  ],
+  "idProviderMappings": {
+    "idP1": "uaepass",
+    "idP2": "uaepass-staging-2"
+  }
+}

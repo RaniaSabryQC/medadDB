@@ -11,6 +11,7 @@ import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -33,21 +34,31 @@ public class ClientManager {
      * @param redirectUris List of redirect URIs
      * @return true if created successfully
      */
-    public boolean createClient(String realmName, String clientId, List<String> redirectUris) {
+    public boolean createClient(String realmName, String clientId,String clientName,String secretClient, String  redirectUrl) {
         try {
             logger.info("Creating client '{}' in realm '{}'", clientId, realmName);
 
             RealmResource realmResource = keycloakAdmin.realm(realmName);
             ClientsResource clientsResource = realmResource.clients();
 
+//            ClientRepresentation client = new ClientRepresentation();
+//            client.setClientId(clientId);
+//            client.setEnabled(true);
+//            client.setPublicClient(true);
+//            client.setDirectAccessGrantsEnabled(true);
+//            client.setRedirectUris(redirectUris);
+//            client.setWebOrigins(Arrays.asList("*"));
+//            client.setProtocol("openid-connect");
+
+
+            // Create client
             ClientRepresentation client = new ClientRepresentation();
             client.setClientId(clientId);
-            client.setEnabled(true);
-            client.setPublicClient(true);
-            client.setDirectAccessGrantsEnabled(true);
-            client.setRedirectUris(redirectUris);
-            client.setWebOrigins(Arrays.asList("*"));
-            client.setProtocol("openid-connect");
+            client.setName(clientName);
+            client.setPublicClient(false);
+            client.setSecret(secretClient);
+            client.setRedirectUris(Collections.singletonList(redirectUrl));
+            client.setWebOrigins(Collections.singletonList("+"));
 
             clientsResource.create(client);
 

@@ -1,0 +1,149 @@
+{
+	"mappings": [
+		{
+			"priority": 1,
+			"request": {
+				"method": "GET",
+				"urlPathPattern": "/idshub/authorize",
+				"queryParameters": {
+					"client_id": {
+						"absent": true
+					}
+				}
+			},
+			"response": {
+				"status": 400
+			}
+		},
+		{
+			"priority": 2,
+			"request": {
+				"method": "GET",
+				"urlPathPattern": "/idshub/authorize",
+				"queryParameters": {
+					"client_id": {
+						"doesNotMatch": "uaepass-client"
+					}
+				}
+			},
+			"response": {
+				"status": 302,
+				"headers": {
+					"Location": "/authenticationendpoint/oauth2_error.do?oauthErrorCode=invalid_client&oauthErrorMsg=client.not.found"
+				}
+			}
+		},
+		{
+			"priority": 3,
+			"request": {
+				"method": "GET",
+				"urlPathPattern": "/idshub/authorize",
+				"queryParameters": {
+					"redirect_uri": {
+						"absent": true
+					}
+				}
+			},
+			"response": {
+				"status": 302,
+				"headers": {
+					"Location": "/authenticationendpoint/oauth2_error.do?oauthErrorCode=invalid_callback&oauthErrorMsg=callback.missing"
+				}
+			}
+		},
+		{
+			"priority": 4,
+			"request": {
+				"method": "GET",
+				"urlPathPattern": "/idshub/authorize",
+				"queryParameters": {
+					"redirect_uri": {
+						"doesNotMatch": "http://.+/realms/.+/broker/.+/endpoint"
+					}
+				}
+			},
+			"response": {
+				"status": 302,
+				"headers": {
+					"Location": "/authenticationendpoint/oauth2_error.do?oauthErrorCode=invalid_callback&oauthErrorMsg=callback.not.match"
+				}
+			}
+		},
+		{
+			"priority": 5,
+			"request": {
+				"method": "GET",
+				"urlPathPattern": "/idshub/authorize",
+				"queryParameters": {
+					"response_type": {
+						"absent": true
+					}
+				}
+			},
+			"response": {
+				"status": 302,
+				"headers": {
+					"Location": "{{request.query.redirect_uri}}?error=invalid_request&error_description=Missing+response_type+parameter+value&state={{request.query.state}}"
+				}
+			}
+		},
+		{
+			"priority": 6,
+			"request": {
+				"method": "GET",
+				"urlPathPattern": "/idshub/authorize",
+				"queryParameters": {
+					"response_type": {
+						"doesNotMatch": "code"
+					}
+				}
+			},
+			"response": {
+				"status": 302,
+				"headers": {
+					"Location": "{{request.query.redirect_uri}}?error=invalid_request&error_description=Invalid+response_type+parameter+value&state={{request.query.state}}"
+				}
+			}
+		},
+		{
+			"priority": 7,
+			"request": {
+				"method": "GET",
+				"urlPathPattern": "/idshub/authorize",
+				"queryParameters": {
+					"acr_values": {
+						"absent": true
+					}
+				}
+			},
+			"response": {
+				"status": 302,
+				"headers": {
+					"Location": "/authenticationendpoint/retry.do?sp=UAE+PASS+Staging+Sandbox&tenantDomain=carbon.super"
+				}
+			}
+		},
+		{
+			"priority": 10,
+			"scenarioName": "AuthCodeLifecycle",
+			"newScenarioState": "CODE_ISSUED",
+			"request": {
+				"method": "GET",
+				"urlPathPattern": "/idshub/authorize",
+				"queryParameters": {
+					"response_type": { "equalTo": "code" },
+					"client_id": { "equalTo": "uaepass-client" },
+					"state": { "matches": ".*" },
+					"redirect_uri": { "matches": "http://.+/realms/.+/broker/.+/endpoint" },
+					"acr_values": { "equalTo": "urn:safelayer:tws:policies:authentication:level:low" }
+				}
+			},
+			"response": {
+				"status": 302,
+				"headers": {
+					"Location": "{{request.query.redirect_uri}}?code=dc13889d-069e-31c4-bbf6-9c5fa73ace9e&state={{request.query.state}}"
+				}
+			}
+		}
+	]
+}
