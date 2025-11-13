@@ -16,12 +16,12 @@
     },
     {
       "username": "testuser2",
-      "email": "testuser2@example.com",
+      "email": "john_doe3@gmail.com",
       "firstName": "Test",
       "lastName": "User Two",
       "password": "SecurePass456!",
       "enabled": true,
-      "emailVerified": false
+      "emailVerified": true
     },
     {
       "username": "adminuser",

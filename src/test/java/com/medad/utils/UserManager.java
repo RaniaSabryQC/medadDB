@@ -218,9 +218,9 @@ public class UserManager {
      * @param firstName First name
      * @param lastName Last name
      * @param password Password
-     * @return true if created successfully, false if already exists
+     * @return userId if created successfully, null if already exists
      */
-    public boolean createUser(String realmName,
+    public String createUser(String realmName,
                               String username,
                               String email,
                               String firstName,
@@ -248,14 +248,14 @@ public class UserManager {
             }
 
             logger.info("✓ User '{}' created successfully", username);
-            return true;
+            return userId;
 
         } catch (ClientErrorException e) {
             int statusCode = e.getResponse().getStatus();
 
             if (statusCode == 409) {
                 logger.warn("⚠ Manual User '{}' already exists in realm '{}'", username, realmName);
-                return false;
+                return null;
             } else {
                 logger.error("✗ Client error creating user '{}'. Status: {}", username, statusCode, e);
                 throw new RuntimeException("Failed to create user. Status: " + statusCode, e);
