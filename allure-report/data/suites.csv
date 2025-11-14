@@ -1,0 +1,2 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"This test verifies that a user linked can successfully login directly through UAE Pass integration","12265","Successful login with linked user","","2025-11-13","passed","2025-11-13","","com.medad.uaepass.LoginViaUaePassTest","com.medad.uaepass.LoginViaUaePassTest","testSuccessfulLoginForLinkedUaePassUser"
