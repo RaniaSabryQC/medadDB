@@ -7,6 +7,9 @@
 	<#if section == "header">
 		${msg("existingAccountQuestion.title")}
 
+	<#elseif section = "subheader">
+        ${msg("existingAccountQuestion.description", identityProvider.displayName!identityProvider.providerAlias, realm.displayName!)}
+
 	<#elseif section == "form">
 		<form id="kc-existing-account-question-form"
 					class="${properties.kcFormClass!}"
@@ -21,7 +24,7 @@
 				name="existingAccountAnswer"
 				value="yes"
 				label="existingAccountQuestion.yes"
-				class=["kcButtonPrimaryClass","kcButtonBlockClass"]/>
+				class=["kcButtonClass", "kcButtonPrimaryClass", "kcButtonAlternativePrimaryClass", "kcMarginBottom1", "kcButtonBlockClass", "kcButtonLargeClass"]/>
 
 				<#if registrationAllowed>
 					<!-- NO button -->
@@ -30,8 +33,9 @@
 					name="existingAccountAnswer"
 					value="no"
 					label="existingAccountQuestion.no"
-					class=["kcButtonSecondaryClass","kcButtonBlockClass"]/>
+					class=["kcButtonClass", "kcButtonSecondaryClass", "kcButtonAlternativeSecondaryClass", "kcButtonBlockClass", "kcButtonLargeClass"]/>
 				</#if>
+
 			</@buttons.actionGroup>
 
 			<#if messagesPerField.existsError('existingAccountQuestionError')>
@@ -45,10 +49,6 @@
 					</div>
 				</div>
 			</#if>
-
-			<p class="${properties.kcFormHelperTextClass!}">
-				${msg("existingAccountQuestion.description", identityProvider.displayName!identityProvider.providerAlias, realm.name!)}
-			</p>
 
 		</form>
 	</#if>

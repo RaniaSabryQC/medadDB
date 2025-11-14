@@ -48,6 +48,84 @@
         "manualLinkingMinAccountType": "SOP1: Basic Account",
         "registrationMinAccountType": "SOP1: Basic Account",
         "defaultScope": "openid profile email",
+        "syncMode": "IMPORT",
+        "defaultAcrValues": "urn:safelayer:tws:policies:authentication:level:low"
+      }
+    },
+    {
+      "alias": "autoLinkingLevel2",
+      "displayName": "UAE Pass",
+      "providerId": "uaepass",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "config": {
+        "clientId": "uaepass-client",
+        "clientSecret": "uaepass-client-secret",
+        "authorizationUrl": "${uaepass.base.url}/authorize",
+        "tokenUrl": "${uaepass.internal.url}/token",
+        "userInfoUrl": "${uaepass.internal.url}/userinfo",
+        "logoutUrl": "${uaepass.base.url}/logout",
+        "generalMinAccountType": "SOP1: Basic Account",
+        "autoLinkingEnabled": "true",
+        "autoLinkingMinAccountType": "SOP1: Basic Account",
+        "autoLinkingLevel": "2 | Emirates ID or Unified ID",
+        "manualLinkingEnabled": "false",
+        "manualLinkingMinAccountType": "SOP1: Basic Account",
+        "registrationMinAccountType": "SOP1: Basic Account",
+        "defaultScope": "openid profile email",
+        "syncMode": "FORCE",
+        "defaultAcrValues": "urn:safelayer:tws:policies:authentication:level:low"
+      }
+    },
+    {
+      "alias": "autoLinkingLevel3",
+      "displayName": "UAE Pass",
+      "providerId": "uaepass",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "config": {
+        "clientId": "uaepass-client",
+        "clientSecret": "uaepass-client-secret",
+        "authorizationUrl": "${uaepass.base.url}/authorize",
+        "tokenUrl": "${uaepass.internal.url}/token",
+        "userInfoUrl": "${uaepass.internal.url}/userinfo",
+        "logoutUrl": "${uaepass.base.url}/logout",
+        "generalMinAccountType": "SOP1: Basic Account",
+        "autoLinkingEnabled": "true",
+        "autoLinkingMinAccountType": "SOP1: Basic Account",
+        "autoLinkingLevel": "3 | Email Address + Mobile Number",
+        "manualLinkingEnabled": "false",
+        "manualLinkingMinAccountType": "SOP1: Basic Account",
+        "registrationMinAccountType": "SOP1: Basic Account",
+        "defaultScope": "openid profile email",
+        "syncMode": "FORCE",
+        "defaultAcrValues": "urn:safelayer:tws:policies:authentication:level:low"
+      }
+    },
+    {
+      "alias": "autoLinkingLevel4",
+      "displayName": "UAE Pass",
+      "providerId": "uaepass",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "config": {
+        "clientId": "uaepass-client",
+        "clientSecret": "uaepass-client-secret",
+        "authorizationUrl": "${uaepass.base.url}/authorize",
+        "tokenUrl": "${uaepass.internal.url}/token",
+        "userInfoUrl": "${uaepass.internal.url}/userinfo",
+        "logoutUrl": "${uaepass.base.url}/logout",
+        "generalMinAccountType": "SOP1: Basic Account",
+        "autoLinkingEnabled": "true",
+        "autoLinkingMinAccountType": "SOP1: Basic Account",
+        "autoLinkingLevel": "4 | Only Email Address",
+        "manualLinkingEnabled": "false",
+        "manualLinkingMinAccountType": "SOP1: Basic Account",
+        "registrationMinAccountType": "SOP1: Basic Account",
+        "defaultScope": "openid profile email",
         "syncMode": "FORCE",
         "defaultAcrValues": "urn:safelayer:tws:policies:authentication:level:low"
       }
@@ -55,6 +133,9 @@
   ],
   "idProviderMappings": {
     "idP1": "uaepass",
-    "idP2": "uaepassManualPath"
+    "idP2": "uaepassManualPath",
+    "idP3": "autoLinkingLevel2",
+    "idP4": "autoLinkingLevel3",
+    "idP5": "autoLinkingLevel4"
   }
 }

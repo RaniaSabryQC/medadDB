@@ -18,7 +18,7 @@
         </#list>
     </#if>
     <title>${msg("loginTitle",(realm.displayName!''))}</title>
-    <link rel="icon" href="${url.resourcesPath}/img/favicon.ico" />
+    <link rel="icon" href="${url.resourcesPath}/img/favicon.svg" />
     <#if properties.stylesCommon?has_content>
         <#list properties.stylesCommon?split(' ') as style>
             <link href="${url.resourcesCommonPath}/${style}" rel="stylesheet" />
@@ -43,11 +43,8 @@
 
 <body class="${properties.kcBodyClass!}">
 <div class="${properties.kcLoginClass!}">
-    <div id="kc-header" class="${properties.kcHeaderClass!}">
-        <div id="kc-header-wrapper" class="${properties.kcHeaderWrapperClass!}">
-        </div>
-    </div>
     <div class="${properties.kcFormCardClass!}">
+        <img id="kc-logo" src="${url.resourcesPath}/img/logo.png" alt="Logo" />
         <header class="${properties.kcFormHeaderClass!}">
             <#if !(auth?has_content && auth.showUsername() && !auth.showResetCredentials())>
                 <#if displayRequiredFields>
@@ -57,10 +54,12 @@
                         </div>
                         <div class="col-md-10">
                             <h1 id="kc-page-title"><#nested "header"></h1>
+                            <p class="kc-subheader"><#nested "subheader"></p>
                         </div>
                     </div>
                 <#else>
                     <h1 id="kc-page-title"><#nested "header"></h1>
+                    <p class="kc-subheader"><#nested "subheader"></p>
                 </#if>
             <#else>
                 <#if displayRequiredFields>
@@ -111,6 +110,8 @@
                     </div>
                 </#if>
 
+                <#nested "socialProviders">
+
                 <#nested "form">
 
                 <#if auth?has_content && auth.showTryAnotherWayLink()>
@@ -123,8 +124,6 @@
                     </form>
                 </#if>
 
-                <#nested "socialProviders">
-
                 <#if displayInfo>
                     <div id="kc-info" class="${properties.kcSignUpClass!}">
                         <div id="kc-info-wrapper" class="${properties.kcInfoAreaWrapperClass!}">
@@ -135,26 +134,62 @@
 
             </div>
         </div>
-        <div class="${properties.kcLocaleWrapperClass!}">
-            <#if realm.internationalizationEnabled  && locale.supported?size gt 1>
-                    <div class="${properties.kcLocaleMainClass!}" id="kc-locale">
-                        <div id="kc-locale-wrapper" class="${properties.kcLocaleWrapperClass!}">
-                            <div id="kc-locale-dropdown" class="${properties.kcLocaleDropDownClass!}">
-                                <a href="#" id="kc-current-locale-link">${locale.current}</a>
-                                <ul class="${properties.kcLocaleListClass!}">
-                                    <#list locale.supported as l>
-                                        <li class="${properties.kcLocaleListItemClass!}">
-                                            <a class="${properties.kcLocaleItemClass!}" href="${l.url}">${l.label}</a>
-                                        </li>
-                                    </#list>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </#if>
-        </div>
     </div>
   </div>
+    <footer class="custom-footer">
+        <div class="footer-copyright">
+            ${msg("copyright", .now?string('yyyy'))}
+        </div>
+        
+        <#if realm.internationalizationEnabled && locale.supported?size gt 1>
+            <div class="footer-locale-wrapper">
+                <div id="kc-locale">
+                    <div id="kc-locale-wrapper" class="footer-locale-wrapper">
+                        <div id="kc-locale-dropdown" class="footer-locale-dropdown">
+                            <a href="#" id="kc-current-locale-link">
+                                <i class="fas fa-globe language-icon" aria-hidden="true"></i>
+                                ${locale.current}
+                                <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                            </a>
+                            <ul class="footer-locale-list">
+                                <#list locale.supported as l>
+                                    <li class="footer-locale-list-item">
+                                        <a class="footer-locale-item <#if locale.current == l.label>active</#if>" href="${l.url}">${l.label}</a>
+                                    </li>
+                                </#list>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </#if>
+    </footer>
+
+    <script>
+        // Toggle dropdown
+        const dropdown = document.getElementById('kc-locale-dropdown');
+        const currentLocaleLink = document.getElementById('kc-current-locale-link');
+        
+        currentLocaleLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            dropdown.classList.toggle('open');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!dropdown.contains(e.target)) {
+                dropdown.classList.remove('open');
+            }
+        });
+        
+        // Close dropdown on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                dropdown.classList.remove('open');
+            }
+        });
+    </script>
+
 </body>
 </html>
 </#macro>

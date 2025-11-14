@@ -7,20 +7,22 @@
       "loginTheme": "medad-theme-v5",
       "eventsListeners": ["jboss-logging"],
       "adminEventsEnabled": true,
-      "adminEventsDetailsEnabled": true
+      "adminEventsDetailsEnabled": true,
+      "accessTokenLifespan": 1800
     },
     {
-      "realm": "medad-deny",
+      "realm": "medad-noregistration",
       "enabled": true,
       "registrationAllowed": false,
       "loginTheme": "medad-theme-v5",
       "eventsListeners": ["jboss-logging"],
       "adminEventsEnabled": true,
-      "adminEventsDetailsEnabled": true
+      "adminEventsDetailsEnabled": true,
+      "accessTokenLifespan": 3600
     }
   ],
   "realmMapping": {
     "register": "medad-allow",
-    "not allow register": "medad-deny"
+    "not allow register": "medad-noregistration"
   }
 }

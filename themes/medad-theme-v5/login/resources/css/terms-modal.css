@@ -1,0 +1,125 @@
+.terms-link-trigger {
+	color: var(--primary-color);
+	text-decoration: underline;
+	font-weight: 600;
+	cursor: pointer;
+	display: inline-block;
+}
+
+.terms-link-trigger:hover {
+	text-decoration: none;
+}
+
+.view-full-terms-btn {
+	background-color: transparent;
+	color: var(--primary-color);
+	border: 2px solid var(--primary-color);
+	padding: 10px 20px;
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 600;
+	margin-bottom: 20px;
+	transition: all 0.3s ease;
+}
+
+.view-full-terms-btn:hover {
+	background-color: var(--primary-color);
+	color: #fff;
+}
+
+.terms-modal {
+	border: none;
+	border-radius: 8px;
+	padding: 0;
+	max-width: 820px;
+	width: min(820px, 90vw);
+	background: transparent;
+}
+
+.terms-modal::backdrop {
+	background: rgba(0, 0, 0, 0.6);
+}
+
+.terms-modal[data-dialog-fallback="true"] {
+	position: fixed;
+	z-index: 1001;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	display: none;
+}
+
+.terms-modal-fallback-backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.6);
+	z-index: 1000;
+	display: none;
+}
+
+.terms-modal-content {
+	background: #fff;
+	padding: 2em;
+	border-radius: 8px;
+	position: relative;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.terms-modal-close {
+	position: absolute;
+	top: 1rem;
+	font-size: 1.6rem;
+	font-weight: bold;
+	color: #aaa;
+	cursor: pointer;
+	transition: color 0.3s ease;
+	background: transparent;
+	border: none;
+}
+
+html:lang(en) .terms-modal-close {
+	right: 1rem;
+}
+
+html:lang(ar) .terms-modal-close {
+	left: 1rem;
+}
+
+.terms-modal-close:hover {
+	color: #000;
+}
+
+.terms-modal-body {
+	max-height: 400px;
+	overflow-y: auto;
+	padding-right: 1rem;
+}
+
+.terms-modal-body h2 {
+	color: var(--primary-color);
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.terms-modal-body p {
+	font-size: 14px;
+	line-height: 1.6;
+	color: #333;
+	margin-bottom: 15px;
+	overflow-wrap: anywhere;
+}
+
+.terms-modal-body ul {
+	overflow-wrap: anywhere;
+}
+
+body.terms-modal-open {
+	overflow: hidden;
+}
+
+@media (max-width: 767px) {
+	.terms-modal-content {
+		padding: 1.5em;
+	}
+}

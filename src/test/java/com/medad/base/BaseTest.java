@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.medad.config.EnvironmentConfig;
 import com.medad.utils.ClientManager;
 import com.medad.utils.IdentityProviderManager;
-import com.medad.utils.RealmConfigurationClientManager;
+import com.medad.utils.RealmConfigurationManager;
 import com.medad.utils.UserManager;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.Page;
@@ -35,6 +35,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 
 
@@ -57,7 +58,7 @@ public class BaseTest {
 
     // Represents Keycloak admin; used for setup
     private static Keycloak keycloakAdmin;
-    protected static RealmConfigurationClientManager realmConfigManager;
+    protected static RealmConfigurationManager realmConfigManager;
     protected static ClientManager clientManager;
     protected static IdentityProviderManager identityProviderManager;
     protected static UserManager userManager;
@@ -230,7 +231,7 @@ public class BaseTest {
     void setupUserBrowser() {
         context = browser.newContext();
         page = context.newPage();
-        screenshotBytes = page.screenshot();
+      //  screenshotBytes = page.screenshot();
     }
 
     @Step("Capture screenshot: {name}")
@@ -253,7 +254,7 @@ public class BaseTest {
     private static void initializeManagers() {
         System.out.println("\nInitializing managers...");
 
-        realmConfigManager = new RealmConfigurationClientManager(keycloakAdmin);
+        realmConfigManager = new RealmConfigurationManager(keycloakAdmin);
         clientManager = new ClientManager(keycloakAdmin);
        identityProviderManager = new IdentityProviderManager(keycloakAdmin);
        userManager = new UserManager(keycloakAdmin);
@@ -268,7 +269,7 @@ public class BaseTest {
     protected String getKeycloakBaseUrl() {
         return MEDAD_IDENTITY_BASE_URL;
     }
-    protected static RealmConfigurationClientManager getRealmConfigManager() {
+    protected static RealmConfigurationManager getRealmConfigManager() {
         return realmConfigManager;  // Returns the instance created above
     }
     protected static ClientManager getClientManager() {
@@ -320,11 +321,8 @@ public class BaseTest {
     }
 
 
+
     @Test
-    @DisplayName("Successful login with valid credentials")
-    @Description("This test verifies that a user can successfully log in using valid username and password through UAE Pass integration")
-    @Severity(SeverityLevel.CRITICAL)
-    @Story("User Authentication")
     public void testCompleteKeycloakSetup() throws IOException {
         System.out.println("\n=== Complete Keycloak Setup Test ===");
 
@@ -367,6 +365,7 @@ public class BaseTest {
         System.out.println("✓ Federated identity link verified");
         System.out.println("=============================="+userID);
 
+
         Assert.assertNotNull("User should be created", userID);
         System.out.println("✓ User 'testuser' created"+userID);
 
@@ -408,50 +407,31 @@ public class BaseTest {
                 .toString();
 
 
-
+        System.out.println("======================"+authUrl);
 
             page.navigate(authUrl);
+        page.waitForLoadState();
+        System.out.println("✓ Page loaded");
 
+        // Take screenshot
+        page.screenshot(new Page.ScreenshotOptions()
+                .setPath(Paths.get("target/screenshots/login-page.png")));
+
+        System.out.println("======================"+authUrl);
 
 
         page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName(UAE_PASS_DISPLAY_NAME).setExact(true)).click();
-        byte[] bytes = null;
-        Allure.addAttachment("Screenshot", new ByteArrayInputStream(bytes));
         page.waitForURL(TEST_CLIENT_OIDC_CALLBACK_URL + "**");
 
 
     }
 
-    @AfterAll
-    static void cleanupMedadIdentity() {
-        medadIdentity.stop();
-        database.stop();
-    }
-
-    @AfterAll
-    static void cleanupUAEPass() {
-        uaepass.stop();
-    }
-
-    @AfterAll
-    static void cleanupKeycloakAdmin() {
-        keycloakAdmin.close();
-    }
-    @AfterAll
-    static void cleanupRelyingParty() {
-        relyingPartyHTTPClient.close();
-        relyingParty.stop();
-    }
-    @AfterAll
-    static void cleanupUserAgent() {
-        browser.close();
-        playwright.close();
-    }
     @AfterEach
     void cleanupRealm() {
-        keycloakAdmin.realm(testRealmName).remove();
+     //   keycloakAdmin.realm(testRealmName).remove();
     }
-
-
-
+    @AfterEach
+    void cleanupUserBrowser() {
+        context.close();
+    }
 }

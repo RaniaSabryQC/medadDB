@@ -1,7 +1,7 @@
 /* Patternfly CSS places a "bg-login.jpg" as the background on this ".login-pf" class.
    This clashes with the "keycloak-bg.png' background defined on the body below.
    Therefore the Patternfly background must be set to none. */
-   :root {
+:root {
 	--primary-color: #0082c9;
 	--secondary-color: #0082c9d1;
 	--border-color: #dde4ee;
@@ -29,6 +29,20 @@ input {
 	outline: none;
 	border-radius: 4px;
 	padding-inline: 0.5rem;
+	transition: all 0.3s ease;
+}
+
+input#termsAccepted {
+	min-height: 0 !important;
+}
+
+input:focus {
+	border-color: var(--primary-color);
+	box-shadow: 0 0 0 2px rgba(0, 130, 201, 0.1);
+}
+
+input:hover:not(:focus) {
+	border-color: #c5c5c5;
 }
 
 .login-pf {
@@ -36,19 +50,26 @@ input {
 }
 
 .login-pf body {
-	height: 100vh;
+	height: auto;
 	font-family: var(--primary-font-family);
 	font-size: 14px;
 	color: #000000;
-	line-height: 3.5;
 	font-weight: 600;
 	margin: 0;
 	padding: 0;
 	width: 100%;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	width: 100%;
+	background-color: #fff;
+}
+
+.login-pf a.kc-social-item:hover {
+	color: #000000 !important;
+	background-color: #eff6ff;
+	transition: var(--hover-transition);
+}
+
+.login-pf a.kc-social-uaepass:hover {
+	background-color: #fff !important;
+	transition: none !important;
 }
 
 #verification-number {
@@ -70,27 +91,56 @@ input {
 	border: 1px solid var(--border-color);
 	background: transparent;
 	outline: none;
-	border-radius: 4px;
+	border-radius: 8px;
 	padding-inline: 0.5rem;
+	transition: all 0.3s ease;
 }
 
 .pf-c-form-control:hover,
 .pf-c-form-control:focus {
 	outline: none;
-	border-color: var(--border-hover);
+	border-color: var(--primary-color);
 	transition: 0.5s;
 }
+
+.pf-c-form-control:hover:not(:focus) {
+	border-color: #c5c5c5;
+}
+
 .pf-c-form__helper-text {
 	font-size: 0.75em;
 	padding-block: 0.25em;
 }
+
 .pf-m-error {
 	color: #c9190b;
 }
+
 .pf-c-form-control[aria-invalid="true"] {
 	border-bottom-color: #c9190b;
 	border-bottom-width: 2px;
 	background-image: none !important;
+}
+
+#kc-register-form .pf-c-form-control[aria-invalid="true"]:focus {
+	box-shadow: 0 0 0 2px rgba(201, 25, 11, 0.1);
+}
+
+/* Error message in register form */
+#kc-register-form .pf-c-form__helper-text.pf-m-error {
+	margin-top: 5px;
+	margin-left: 0;
+	display: block;
+}
+
+/* Input error messages */
+.kcInputErrorMessageClass,
+span[id^="input-error"] {
+	color: #c9190b;
+	font-size: 13px;
+	margin-top: 5px;
+	display: block;
+	font-weight: 500;
 }
 
 .pf-c-check__label,
@@ -109,6 +159,7 @@ input {
 	-ms-grid-columns: max-content 1fr max-content;
 	grid-template-columns: max-content 1fr max-content;
 	grid-template-rows: 1fr auto;
+	align-items: center;
 }
 
 .pf-c-alert.pf-m-inline::before {
@@ -167,16 +218,29 @@ input {
 	padding: 5px 8px;
 }
 
-#kc-login {
+.kc-primary-btn {
 	color: #ffffff !important;
 	background-color: var(--primary-color);
 	font-size: 1rem;
+	border-radius: 8px;
 }
 
-#kc-login:hover {
+.kc-primary-btn:hover {
 	background-color: var(--secondary-color) !important;
 	transition: var(--hover-transition);
 	cursor: pointer;
+}
+
+.kc-secondary-btn {
+	color: #414651 !important;
+	background-color: #fff;
+	font-size: 1rem;
+	border-radius: 8px;
+	cursor: pointer;
+	border: 1px solid #D5D7DA;
+}
+
+.kc-secondary-btn:hover {
 }
 
 .pf-c-button:after {
@@ -189,6 +253,10 @@ input {
 	background-color: var(--primary-color);
 }
 
+.pf-mb-1 {
+	margin-bottom: 1rem
+}
+
 /* default - IE compatibility */
 .pf-m-primary:hover {
 	background-color: var(--secondary-color);
@@ -196,58 +264,124 @@ input {
 	cursor: pointer;
 }
 
-/*End of IE compatibility*/
-h1#kc-page-title {
-	text-align: start !important;
-}
-.pf-c-locale-wrapper {
-	display: flex;
-	justify-content: flex-end;
-	align-items: center;
-	margin-top: 20px;
-	margin-bottom: 10px;
-}
-#kc-locale ul {
-	background-color: #fff;
-	display: none;
-	top: 8px;
-	min-width: 100px;
-	padding: 0;
-}
+ .custom-footer {
+ 	background-color: #fff;
+ 	border-top: 1px solid #E9EAEB;
+ 	padding: 1.5rem 2rem;
+ 	display: flex;
+ 	justify-content: space-between;
+ 	align-items: center;
+ 	flex-wrap: wrap;
+ 	gap: 1rem;
+	height: 80px;
+ }
 
-#kc-locale-dropdown {
-	display: inline-block;
+ .footer-copyright {
+ 	color: #6a6e73;
+ 	font-size: 0.875rem;
+ }
+  /* Locale Dropdown Styles */
+.footer-locale-wrapper {
 	position: relative;
 }
 
-#kc-locale-dropdown:hover ul {
+.footer-locale-dropdown {
+	position: relative;
+}
+
+#kc-current-locale-link {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	color: #151515;
+	text-decoration: none;
+	font-size: 0.875rem;
+	padding: 0.25rem 0.5rem;
+	cursor: pointer;
+	border-radius: 3px;
+	transition: background-color 0.2s;
+}
+
+#kc-current-locale-link:hover {
+	background-color: #e7e7e7;
+}
+
+#kc-current-locale-link:focus {
+	outline: 2px solid #06c;
+	outline-offset: 2px;
+}
+
+#kc-current-locale-link i {
+	font-size: 0.75rem;
+	transition: transform 0.2s;
+}
+
+.footer-locale-list {
+	display: none;
+	position: absolute;
+	bottom: 100%;
+	right: 0;
+	margin-bottom: 0.5rem;
+	background: white;
+	border-radius: 8px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+	list-style: none;
+	padding: 0.5rem 0;
+	margin: 0;
+	min-width: 200px;
+	z-index: 1000;
+}
+
+.footer-locale-dropdown.open .footer-locale-list {
 	display: block;
 }
 
-/* IE compatibility */
-#kc-locale-dropdown a {
-	color: #6a6e73;
+.footer-locale-list-item {
+	margin: 0;
+}
+
+.footer-locale-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0.75rem 1.25rem;
+	color: #151515;
+	text-decoration: none;
+	font-size: 1rem;
+	transition: background-color 0.2s;
+	position: relative;
+}
+
+.footer-locale-item:hover {
+	background-color: #f5f5f5;
 	text-decoration: none;
 }
 
-/* IE compatibility */
-a#kc-current-locale-link::after {
-	content: "\2c5";
-	margin-left: 4px;
+.footer-locale-item:focus {
+	outline: 2px solid #06c;
+	outline-offset: -2px;
+	background-color: #f5f5f5;
 }
 
+.footer-locale-item.active::after {
+	content: '\f00c';
+	font-family: 'Font Awesome 6 Free';
+	font-weight: 900;
+	color: #06c;
+	font-size: 1rem;
+}
+
+.language-icon {
+	color: #151515;
+	margin-right: 0.25rem;
+}
 .login-pf .container {
 	padding-top: 40px;
 }
 
-.login-pf a:hover {
-	color: #000000 !important;
-	background-color: #eff6ff;
-	transition: var(--hover-transition);
-}
-
 #kc-logo {
-	width: 100%;
+	width: 225px;
+    margin: 0 auto;
 }
 
 div.kc-logo-text {
@@ -264,14 +398,22 @@ div.kc-logo-text span {
 }
 
 #kc-header {
-	background-image: linear-gradient(227deg, #0082c9a3 10%, #0082c9 60%), url(../img/medadBackground.png);
+	background-image: linear-gradient(227deg, #0082c9a3 10%, #0082c9 60%),
+		url(../img/medadBackground.png);
 	background-size: cover;
 	background-repeat: no-repeat;
+	background-position: center;
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	height: 100vh;
+	min-height: 100vh;
+	height: 100%;
 	width: 50%;
+	margin: 0;
+}
+
+.kc-subheader {
+	text-align: center;
 	margin: 0;
 }
 
@@ -289,6 +431,7 @@ div.kc-logo-text span {
 
 #kc-content {
 	width: 100%;
+	margin: 0;
 }
 
 #kc-attempted-username {
@@ -329,17 +472,12 @@ div.kc-logo-text span {
 #kc-form-webauthn .pf-l-stack__item {
 	margin: -1px 0;
 }
-
 #kc-content-wrapper {
-	margin-top: 20px;
+	margin-top: 10px;
 }
 
 #kc-form-wrapper {
 	margin-top: 10px;
-}
-
-#kc-info {
-	margin: 20px -40px -30px;
 }
 
 #kc-info-wrapper {
@@ -348,13 +486,34 @@ div.kc-logo-text span {
 	/* background-color: #F0F0F0; */
 }
 
+#kc-form-options.back-to-previous-step {
+	text-align: start;
+}
+
 #kc-form-options span {
 	display: block;
 }
 
 #kc-form-options .checkbox {
-	margin-top: 0;
+	margin: 5px 0;
 	color: #72767b;
+}
+
+#kc-content-wrapper .checkbox label {
+	flex-direction: row;
+	margin-top: 0;
+	line-height: 1.5;
+    font-weight: 500;
+}
+
+#kc-content-wrapper .checkbox input {
+	min-height: 0;
+}
+
+#kc-form-options a.back {
+	font-size: 14px;
+	text-decoration: underline;
+	font-weight: 500;
 }
 
 #kc-form-options a {
@@ -379,7 +538,6 @@ div.kc-logo-text span {
 
 .subtitle {
 	text-align: right;
-	margin-top: 30px;
 	color: #909090;
 }
 
@@ -443,16 +601,32 @@ ul#kc-totp-supported-apps {
 
 /* Social */
 .kc-social-links {
-	margin-top: 20px;
 	padding: 0;
 	list-style: none;
+	margin: 0;
+}
+
+.divider {
+	margin: 20px 0;
+	padding: 0 15px;
+	color: #666;
+	font-size: 14px;
+	text-align: center;
+	background: linear-gradient(to right, #ddd 0%, #ddd 45%, transparent 45%, transparent 55%, #ddd 55%, #ddd 100%);
+	background-size: 100% 1px;
+	background-position: center;
+	background-repeat: no-repeat;
+	line-height: 1;
+}
+
+.divider span {
+	padding: 0 10px;
 }
 
 .kc-social-provider-logo {
 	font-size: 23px;
 	width: 30px;
 	height: 25px;
-	float: left;
 	color: var(--primary-color) !important;
 }
 
@@ -461,20 +635,43 @@ ul#kc-totp-supported-apps {
 }
 
 .kc-social-item {
-	margin-bottom: 0.5rem;
 	border: 1px solid var(--border-color) !important;
 	display: block;
 	font-size: 15px;
-	width: 100% !important;
 	text-align: center;
-	padding: 11px 0;
+	padding: 10px 0;
+    height: 40px;
 	text-decoration: none;
-	line-height: 1.5em;
+	width: 270px;
+	margin: 0.8rem auto;
+	border-radius: 8px;
+	display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+	box-shadow: 0px 1px 2px 0px #0A0D120D;
 }
 
-.kc-social-provider-name {
-	position: relative;
-	top: 3px;
+.kc-social-uaepass {
+	background-color: #fff !important;
+	transition: none;
+	border: 1px solid #181D27 !important;
+	box-shadow: 0px 2px 2px -1px #0A0D120A;
+	box-shadow: 0px 4px 6px -2px #0A0D1208;
+	box-shadow: 0px 12px 16px -4px #0A0D1214;
+}
+
+.login-pf a.kc-social-item:hover {
+	color: #000000 !important;
+	background-color: #eff6ff;
+	transition: var(--hover-transition);
+}
+
+.provider-logo {
+	width: 280px;
+	height: 60px;
+	max-width: 100%;
+	object-fit: contain;
 }
 
 .kc-social-icon-text {
@@ -499,7 +696,6 @@ ul#kc-totp-supported-apps {
 
 .kc-social-section {
 	text-align: center;
-	margin-top: 34px;
 }
 
 .kc-social-section hr {
@@ -574,7 +770,9 @@ ul#kc-totp-supported-apps {
 		text-align: left;
 		background-image: none;
 		align-items: center;
-		height: 6em;
+		height: auto;
+		min-height: 6em;
+		width: 100%;
 	}
 
 	#kc-header-wrapper {
@@ -608,6 +806,16 @@ ul#kc-totp-supported-apps {
 		padding-bottom: 15px;
 	}
 
+	.login-pf-page {
+		flex-direction: column;
+		min-height: 100vh;
+		height: auto;
+	}
+
+	.card-pf {
+		min-height: auto;
+	}
+
 	/* #kc-locale {
 			position: absolute;
 			width: 200px;
@@ -636,20 +844,34 @@ ul#kc-totp-supported-apps {
 	margin-left: 10px;
 }
 
-#kc-form-buttons {
-	margin-top: 20px;
+#kc-register-form input[type="submit"],
+#kc-register-form button[type="submit"] {
+	width: 100%;
+	font-size: 16px;
+	font-weight: 600;
+	border-radius: 8px;
+	transition: all 0.3s ease;
+	margin-top: 10px;
+	padding: 10px 0;
 }
+
+#kc-register-form input[type="submit"]:hover,
+#kc-register-form button[type="submit"]:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(0, 131, 201, 0.205);
+}
+
 .login-pf-page {
 	display: flex;
-	align-items: center;
-	height: 100vh;
+	align-items: stretch;
+	height: auto;
 	width: 100%;
 	padding: 0;
 	background: #fff;
+	min-height: calc(100vh - 80px);
 }
 
 .login-pf-page .login-pf-brand {
-	/* margin-top: 20px; */
 	max-width: 360px;
 	width: 40%;
 }
@@ -711,9 +933,6 @@ ul#kc-totp-supported-apps {
 	font-weight: bold;
 }
 
-.select-auth-box-desc {
-}
-
 .select-auth-box-paragraph {
 	text-align: center;
 	margin-bottom: 5px;
@@ -721,9 +940,14 @@ ul#kc-totp-supported-apps {
 
 .card-pf {
 	margin: 0 auto;
-	padding: 20px !important;
-	width: 450px;
+	padding: 20px 0 !important;
+	width: 360px;
+	max-width: 100%;
 	box-shadow: none;
+	height: auto;
+	display: flex;
+	flex-direction: column;
+	/* justify-content: center; */
 }
 
 /*phone*/
@@ -731,6 +955,9 @@ ul#kc-totp-supported-apps {
 	.login-pf body {
 		background-image: none;
 		background-color: white;
+		flex-direction: column;
+		min-height: 100vh;
+		height: auto;
 	}
 
 	.login-pf-page .card-pf {
@@ -739,19 +966,25 @@ ul#kc-totp-supported-apps {
 		margin-right: 0;
 		border-top: 0;
 		box-shadow: 0 0;
-		padding: 0 !important;
-		width: 60%;
+		padding: 20px !important;
+		width: 100%;
+		min-height: auto;
+		width: 370px;
 	}
 
 	.card-pf {
 		padding: 5%;
-		padding-top: 0px;
+		padding-top: 20px;
+		min-height: auto;
 	}
 
 	.login-pf-page {
-		justify-content: center;
+		justify-content: flex-start;
 		flex-direction: column;
 		width: 100%;
+		min-height: 100vh;
+		height: auto;
+		margin: 0 auto;
 	}
 
 	.kc-social-grid {
@@ -762,6 +995,45 @@ ul#kc-totp-supported-apps {
 	}
 	.kc-social-grid .kc-social-icon-text {
 		left: -15px;
+	}
+
+	/* Mobile register form layout */
+	#kc-register-form .form-group {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 5px;
+	}
+
+	#kc-register-form .form-group > div:first-child,
+	#kc-register-form .form-group > div:last-child {
+		flex: none;
+		width: 100%;
+		justify-content: flex-start;
+		padding-right: 0;
+		padding-left: 0;
+	}
+
+	#kc-register-form .form-group label {
+		line-height: 1.5;
+	}
+
+	#kc-register-form .form-group input[type="text"],
+	#kc-register-form .form-group input[type="email"],
+	#kc-register-form .form-group input[type="password"],
+	#kc-register-form .form-group .pf-c-form-control {
+		width: 100%;
+	}
+}
+
+/* Tablet and medium screens */
+@media (min-width: 768px) and (max-width: 1024px) {
+	.card-pf {
+		width: 350px;
+		padding: 30px !important;
+	}
+
+	#kc-header {
+		width: 45%;
 	}
 }
 
@@ -774,7 +1046,7 @@ ul#kc-totp-supported-apps {
 	}
 
 	.login-pf-page .card-pf {
-		width: 80%;
+		width: 75%;
 	}
 }
 
@@ -782,15 +1054,30 @@ ul#kc-totp-supported-apps {
 	font-size: 15px;
 	color: #72767b;
 	text-align: center;
+	margin-top: 0;
 }
 .login-pf-page .login-pf-signup a {
-	margin-left: 10px;
+	margin-left: 0px;
 	color: #0088ce;
 	text-decoration: none;
 }
-.login-pf a:hover {
+
+.login-pf a.kc-social-item:hover {
 	color: #0099d3;
 }
+
+.login-pf a.kc-social-item.kc-nafath {
+	background-color: #0A9A8F;
+	color: #fff;
+}
+
+.login-pf a.kc-social-item:hover.kc-nafath {
+	opacity: 0.8;
+	transition: var(--hover-transition);
+	background-color: #0A9A8F;
+	color: #fff !important;
+}
+
 #kc-content-wrapper .row {
 	margin-left: 0;
 	margin-right: 0;
@@ -800,17 +1087,30 @@ ul#kc-totp-supported-apps {
 	display: flex;
 	flex-direction: column;
 	line-height: 2em;
-	margin-top: 1em;
+	margin-top: 0;
+	text-align: start;
 }
 
-#kc-content-wrapper button {
-	padding: 12px;
-	border-radius: 8px !important;
-	border: 1px solid var(--primary-color);
-	background-color: var(--primary-color);
-	color: #ffffff;
-	font-size: 1.25em;
-	margin-top: 2em;
+#kc-register-form label {
+	display: inline-block;
+	margin-top: 0;
+	font-weight: 600;
+	color: #333;
+	font-size: 14px;
+}
+
+#kc-register-form .col-md-10,
+#kc-register-form .col-xs-12 {
+	padding-left: 0;
+	padding-right: 0;
+}
+
+button.pf-m-link {
+	margin: 10px 10px 10px 0;
+}
+
+html:lang(ar) button.pf-m-link {
+	margin: 10px 0px 10px 10px;
 }
 
 .login-pf-page.login-pf-page-accounts {
@@ -833,7 +1133,8 @@ ul#kc-totp-supported-apps {
 .form-group {
 	display: flex;
 	flex-direction: column;
-	margin-bottom: 15px;
+	margin-bottom: 8px;
+	/* gap: 8px; */
 }
 
 .form-group label[for="password"] + div {
@@ -845,24 +1146,139 @@ ul#kc-totp-supported-apps {
 	flex: 1;
 }
 
-.form-group label[for="password"] + div button {
-	flex: 0;
-	margin: 0 !important;
-	position: absolute;
-	right: 0;
-	width: 2.5em;
-	border-color: transparent !important;
-	background: transparent !important;
+#kc-register-form .form-group span.pf-c-form-control{ 
+
 }
 
-.form-group label[for="password"] + div button i {
-	color: #292929;
+#kc-register-form .form-group {
+	/* display: flex;
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 15px;
+	list-style: none; */
+}
+
+/* Label wrapper - fixed width on left */
+#kc-register-form .form-group > div:first-child {
+	/* flex: 0 0 145px;
+	display: flex;
+	align-items: center;
+	padding-right: 0; */
+}
+
+/* Input wrapper - flexible width on right */
+#kc-register-form .form-group > div:last-child {
+	flex: 1;
+	display: flex;
+	flex-direction: row;
+	align-items: stretch;
+	flex-wrap: wrap;
+}
+
+#kc-register-form .form-group label {
+	margin: 0;
+	font-weight: 600;
+	font-size: 14px;
+	color: #333;
+	display: inline;
+	line-height: 1.5;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group .pf-c-form-control {
+	flex: 1 1 auto;
+	min-width: 0;
+	width: 100%;
+}
+
+.pf-c-input-group {
+	display: flex;
+	position: relative;
+	width: 100%;
+}
+
+.pf-c-input-group button {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	margin: 0 !important;
+	padding: 0;
+	width: 2.5rem;
+	height: 2.5rem;
+	border: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	background-color: white !important;
+}
+
+.pf-c-input-group button[data-password-toggle] {
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition: opacity 0.2s ease, visibility 0.2s ease, color 0.3s ease;
+}
+
+.pf-c-input-group:focus-within button[data-password-toggle],
+.pf-c-input-group button[data-password-toggle]:focus-visible,
+.pf-c-input-group button[data-password-toggle]:hover {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+}
+
+html:lang(en) .pf-c-input-group button {
+	right: 0.5rem;
+}
+
+html:lang(ar) .pf-c-input-group button {
+	left: 0.5rem;
+}
+
+.pf-c-input-group button:focus-visible {
+	outline: 1px solid rgba(0, 130, 201, 0.45);
+	outline-offset: 2px;
+}
+
+.pf-c-input-group button i {
+	color: #666;
+	font-size: 0.9rem;
+	transition: color 0.3s ease;
+}
+
+.pf-c-input-group button:hover i {
+	color: var(--primary-color);
+}
+
+#kc-register-form div.form-group:last-of-type {
+	gap: 10px;
+}
+
+#kc-register-form .terms-acceptance-wrapper {
+	display: flex !important;
+    flex-direction: row!important;
+    flex-wrap: nowrap!important;
+    align-items: flex-start!important;
+    gap: 5px!important;
+	cursor: pointer;
+}
+
+#kc-register-form .terms-acceptance-wrapper label {
+	font-size: 14px;
+    font-weight: 500;
 }
 
 .login-pf-page .login-pf-settings {
 	flex-direction: row;
 	justify-content: space-between;
 	flex-wrap: wrap;
+	align-items: center;
 }
 
 .login-pf-settings a {
@@ -874,7 +1290,6 @@ ul#kc-totp-supported-apps {
 	padding-top: 0px;
 }
 #kc-form-login div.form-group:last-of-type,
-#kc-register-form div.form-group:last-of-type,
 #kc-update-profile-form div.form-group:last-of-type {
 	margin-bottom: 0px;
 }
@@ -897,11 +1312,14 @@ ul#kc-totp-supported-apps {
 .pf-c-dropdown__menu li {
 	list-style-type: none;
 	text-align: start;
+	background: #fff;
+    padding: 4px;
 }
 .pf-c-dropdown__menu li a {
 	padding: 8px 12px;
 	text-decoration: none;
 	display: block;
+	border-radius: 5px;
 }
 
 .pf-c-dropdown__menu li a:hover {
@@ -914,11 +1332,33 @@ html:lang(ar) * {
 	font-family: "Tajawal";
 }
 
-html:lang(ar) a#kc-current-locale-link::after {
-	content: "\2c5";
-	margin-right: 4px;
+/* Fix FontAwesome icons in Arabic */
+html:lang(ar) i,
+html:lang(ar) .fa,
+html:lang(ar) [class*="fa-"],
+html:lang(ar) button i,
+html:lang(ar) .pf-c-input-group button i {
+	font-family: "Font Awesome 6 Free", "FontAwesome";
+}
+
+html:lang(ar) .footer-locale-list {
+	right: unset;
+	left: 0;
 }
 
 .pf-c-login__main-footer-links {
 	display: block !important;
+}
+
+.checkbox label, .radio label {
+	padding-left: unset;
+	padding-inline-start: 20px;
+}
+
+.checkbox input[type=checkbox],
+.checkbox-inline input[type=checkbox],
+.radio input[type=radio],
+.radio-inline input[type=radio] {
+	margin-left: unset;
+	margin-inline-start: -20px;
 }

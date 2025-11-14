@@ -31,7 +31,6 @@ public class ClientManager {
      * Create a client in a realm
      * @param realmName Realm name
      * @param clientId Client ID
-     * @param redirectUris List of redirect URIs
      * @return true if created successfully
      */
     public boolean createClient(String realmName, String clientId,String clientName,String secretClient, String  redirectUrl) {

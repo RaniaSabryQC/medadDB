@@ -24,13 +24,19 @@
       "emailVerified": true
     },
     {
-      "username": "adminuser",
+      "username": "Emirateuser",
       "email": "admin@example.com",
       "firstName": "Admin",
       "lastName": "User",
       "password": "AdminPass789!",
+      "idn": "79869686886868969",
       "enabled": true,
-      "emailVerified": true
+      "emailVerified": true,
+      "federatedIdentity": {
+      "identityProvider": "uaepass",
+      "federatedUserId": "ca33aa7b-0c2f-4e8e-9b22-2eafe1f9234c",
+      "federatedUsername": "ca33aa7b-0c2f-4e8e-9b22-2eafe1f9234c"
+    }
     }
   ],
   "userMappings": {
