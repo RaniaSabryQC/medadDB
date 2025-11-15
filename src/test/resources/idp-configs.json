@@ -129,6 +129,31 @@
         "syncMode": "FORCE",
         "defaultAcrValues": "urn:safelayer:tws:policies:authentication:level:low"
       }
+    },{
+      "alias": "uaepassNewUser",
+      "displayName": "UAE Pass",
+      "providerId": "uaepass",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "config": {
+        "clientId": "uaepass-client",
+        "clientSecret": "uaepass-client-secret",
+        "authorizationUrl": "${uaepass.base.url}/authorize",
+        "tokenUrl": "${uaepass.internal.url}/token",
+        "userInfoUrl": "${uaepass.internal.url}/userinfo",
+        "logoutUrl": "${uaepass.base.url}/logout",
+        "generalMinAccountType": "SOP1: Basic Account",
+        "autoLinkingEnabled": "false",
+        "autoLinkingMinAccountType": "SOP2: Advanced Account",
+        "autoLinkingLevel": "4 | Only Email Address",
+        "manualLinkingEnabled": "false",
+        "manualLinkingMinAccountType": "SOP2: Advanced Account",
+        "registrationMinAccountType": "SOP1: Basic Account",
+        "defaultScope": "openid profile email",
+        "syncMode": "IMPORT",
+        "defaultAcrValues": "urn:safelayer:tws:policies:authentication:level:low"
+      }
     }
   ],
   "idProviderMappings": {
@@ -136,6 +161,7 @@
     "idP2": "uaepassManualPath",
     "idP3": "autoLinkingLevel2",
     "idP4": "autoLinkingLevel3",
-    "idP5": "autoLinkingLevel4"
+    "idP5": "autoLinkingLevel4",
+    "idP6": "uaepassNewUser"
   }
 }

@@ -1,6 +1,5 @@
 package com.medad.base;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.medad.config.EnvironmentConfig;
 import com.medad.utils.ClientManager;
 import com.medad.utils.IdentityProviderManager;
@@ -8,12 +7,10 @@ import com.medad.utils.RealmConfigurationManager;
 import com.medad.utils.UserManager;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.options.AriaRole;
-import io.qameta.allure.*;
+import io.qameta.allure.Allure;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.UriBuilder;
-import org.junit.Assert;
 import org.junit.jupiter.api.*;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
@@ -32,6 +29,7 @@ import org.wiremock.integrations.testcontainers.WireMockContainer;
 
 import java.awt.*;
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -42,7 +40,6 @@ import java.time.Duration;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-@Epic("Keycloak Authentication")
 
 public class BaseTest {
 
@@ -156,8 +153,6 @@ public class BaseTest {
 
 
     @BeforeAll
-    @Description("Setup DataBase")
-    @Step("Step 1: Setup DataBase")
     static void setDatabase(){
         database.start();
         String jdbcUrl = String.format(
@@ -176,8 +171,6 @@ public class BaseTest {
 
     }
     @BeforeAll
-    @Description("Setup Medad Container")
-    @Step("Step 2: Setup MedadIdentity ")
     static void setupMedadIdentity() {
 
         medadIdentity.start();
@@ -194,8 +187,6 @@ public class BaseTest {
 
 
     @BeforeAll
-    @Description("Setup UAE Pass")
-    @Step("Step 3: Setup UAE PASS ")
     static void setupUAEPass() {
         uaepass.start();
         UAE_PASS_HOST_BASE_URL = uaepass.getUrl("/idshub");
@@ -209,8 +200,6 @@ public class BaseTest {
     }
 
     @BeforeAll
-    @Description("Setup Response URL")
-    @Step("Step 4: Setup Response URL")
     static void setupRelyingParty() {
         relyingParty.start();
         TEST_CLIENT_BASE_URL = relyingParty.getBaseUrl();
@@ -220,8 +209,6 @@ public class BaseTest {
     }
 
     @BeforeAll
-    @Description("Setup Browser")
-    @Step("Step 5: Setup Browser")
     static void setupUserAgent() {
         playwright = Playwright.create();
         browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(false).setSlowMo(500));
@@ -229,17 +216,43 @@ public class BaseTest {
 
     @BeforeEach
     void setupUserBrowser() {
-        context = browser.newContext();
+        //context = browser.newContext();
+        context = browser.newContext(
+                new Browser.NewContextOptions()
+                        .setRecordVideoDir(Paths.get("target/videos"))
+                        .setRecordVideoSize(1280, 720)
+        );
+       // Page page = context.newPage();
         page = context.newPage();
-      //  screenshotBytes = page.screenshot();
     }
 
-    @Step("Capture screenshot: {name}")
-    @Attachment(value = "{name}", type = "image/png")
-    public byte[] captureScreenshot(String name, Page page) {
-        return page.screenshot();
+    @AfterEach
+    void attachVideo() throws IOException {
+        if (page != null && page.video() != null) {
+            Path videoPath = page.video().path();
+            page.close();   // finalize video
+            context.close(); // finalize context
+
+            try (FileInputStream fis = new FileInputStream(videoPath.toFile())) {
+                Allure.addAttachment("Test Video", "video/webm", fis, ".webm");
+            }
+        }
     }
 
+
+    public void captureScreenshot(String name, Page page) {
+        byte[] screenshot = page.screenshot();
+        Allure.addAttachment(name, new ByteArrayInputStream(screenshot));
+       // page.screenshot();
+    }
+
+    public void attachVideo(Path videoPath) {
+        try (FileInputStream fis = new FileInputStream(videoPath.toFile())) {
+            Allure.addAttachment("Test Video", "video/webm", fis, ".webm");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     protected static void setupKeycloakAdmin() {
         keycloakAdmin = KeycloakBuilder.builder()
@@ -321,110 +334,6 @@ public class BaseTest {
     }
 
 
-
-    @Test
-    public void testCompleteKeycloakSetup() throws IOException {
-        System.out.println("\n=== Complete Keycloak Setup Test ===");
-
-        // Step 1: Create Realm
-        Allure.step("Step 1: Create Realm", () -> {
-            System.out.println("\nStep 1: Creating realm...");
-            //take label from jason file
-            JsonNode realmNode = getRealmConfigManager().getRealmNodeByName("realm-configs.json", "medad-allow");
-            testRealmName = realmNode.get("realm").asText();
-            boolean realmCreated = getRealmConfigManager().createRealmFromNode(realmNode);
-            Assert.assertTrue("Realm should be created", realmCreated);
-            System.out.println("✓ Realm created: " + testRealmName);
-        });
-
-        // Step 2: Create Client
-        System.out.println("\nStep 2: Creating client...");
-        boolean clientCreated = getClientManager().createClient(
-                testRealmName,TEST_CLIENT_ID,TEST_CLIENT_NAME,TEST_CLIENT_SECRET
-                ,TEST_CLIENT_OIDC_CALLBACK_URL);
-        Assert.assertTrue("Client should be created", clientCreated);
-        System.out.println("✓ Client 'my-app' created");
-
-
-        // Step 3: Create UAE Pass Identity Provider
-        System.out.println("\nStep 3: Creating UAE Pass identity provider...");
-        JsonNode idpNode = getIdentityProviderManager().getIdentityProviderNodeByAlias("idp-configs.json", "uaepass");
-        System.out.println("=============================="+idpNode);
-        boolean idpUaPassCreated= getIdentityProviderManager().createIdentityProviderFromNodeWithUrls(testRealmName, idpNode, UAE_PASS_HOST_BASE_URL, UAE_PASS_INTERNAL_BASE_URL);
-        Assert.assertTrue("UAE Pass identity provider should be created", idpUaPassCreated);
-        System.out.println("✓ UAE Pass identity provider created");
-
-
-        // Step 4: Create Test User
-        System.out.println("\nStep 4: Creating test user...");
-        JsonNode userNode = getUserManager().getUserNodeByUsername("users.json", "testuser1");
-        System.out.println("=============================="+userNode);
-        String userID = getUserManager().createUserFromNode(testRealmName, userNode);
-        boolean hasFedLink = getUserManager().hasFederatedIdentity(testRealmName, userID, "uaepass");
-        assertTrue(hasFedLink, "User should have federated identity link");
-        System.out.println("✓ Federated identity link verified");
-        System.out.println("=============================="+userID);
-
-
-        Assert.assertNotNull("User should be created", userID);
-        System.out.println("✓ User 'testuser' created"+userID);
-
-        // Step 5: Verify everything exists
-        System.out.println("\nStep 5: Verifying setup...");
-        Assert.assertTrue(getRealmConfigManager().realmExists(testRealmName));
-        Assert.assertTrue(getClientManager().clientExists(testRealmName, "test-client"));
-        Assert.assertTrue(getIdentityProviderManager().identityProviderExists(testRealmName, "uaepass"));
-        Assert.assertTrue(getUserManager().userExists(testRealmName, "testuser1"));
-
-        System.out.println("✓ All components verified");
-        System.out.println("\n=== Complete Setup Test PASSED ===");
-
-       openBrowser(MEDAD_IDENTITY_BASE_URL);
-
-
-        // Wait for manual verification
-//        System.out.println("\n⏸  Press Enter after verifying in browser...");
-//        System.in.read();
-
-        System.out.println("✓ Visual verification complete!");
-
-        System.out.println("==========================================================================");
-
-        UriBuilder baseOidcUriBuilder = UriBuilder.fromUri(MEDAD_IDENTITY_BASE_URL)
-                .path("realms")
-                .path(testRealmName)
-                .path("protocol")
-                .path("openid-connect");
-
-        String authUrl = baseOidcUriBuilder.clone()
-                .path("auth")
-                .queryParam("response_type", "code")
-                .queryParam("redirect_uri", TEST_CLIENT_OIDC_CALLBACK_URL)
-                .queryParam("state", TEST_STATE)
-                .queryParam("client_id", TEST_CLIENT_ID)
-                .queryParam("scope", "openid profile email")
-                .build()
-                .toString();
-
-
-        System.out.println("======================"+authUrl);
-
-            page.navigate(authUrl);
-        page.waitForLoadState();
-        System.out.println("✓ Page loaded");
-
-        // Take screenshot
-        page.screenshot(new Page.ScreenshotOptions()
-                .setPath(Paths.get("target/screenshots/login-page.png")));
-
-        System.out.println("======================"+authUrl);
-
-
-        page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName(UAE_PASS_DISPLAY_NAME).setExact(true)).click();
-        page.waitForURL(TEST_CLIENT_OIDC_CALLBACK_URL + "**");
-
-
-    }
 
     @AfterEach
     void cleanupRealm() {

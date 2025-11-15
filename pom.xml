@@ -6,8 +6,8 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Define Keycloak version so dependencyManagement import resolves -->
         <keycloak.version>26.4.1</keycloak.version>
@@ -193,7 +193,7 @@
                     <dependency>
                         <groupId>org.aspectj</groupId>
                         <artifactId>aspectjweaver</artifactId>
-                        <version>${aspectj.version}</version>
+                        <version>1.9.24</version>
                     </dependency>
                     <!-- ⭐ JAX-RS Client API -->
                     <dependency>
@@ -230,12 +230,13 @@
                     </dependency>
 
                 </dependencies>
-
                 <configuration>
                     <!-- IMPORTANT: Combine BOTH configurations in argLine -->
                     <argLine>
                         -Djava.util.logging.manager=org.jboss.logmanager.LogManager
                         -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"
+                        -Djdk.net.URLClassPath.disableClassPathURLCheck=true
+                        --add-opens java.base/sun.misc=ALL-UNNAMED
                     </argLine>
                     <!-- Keep your existing settings -->
                     <useSystemClassLoader>true</useSystemClassLoader>

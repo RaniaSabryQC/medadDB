@@ -6,12 +6,16 @@ import com.medad.base.BaseTest;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
 import io.qameta.allure.*;
+import jakarta.validation.constraints.AssertTrue;
 import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -19,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Epic("Medad Identity")
 @Feature("UAE Pass Integration")
 public class LoginViaUaePassTest extends BaseTest {
+    JsonNode userNode;
 
 
     @Test
@@ -26,7 +31,7 @@ public class LoginViaUaePassTest extends BaseTest {
     @Description("This test verifies that a user linked can successfully login directly through UAE Pass integration")
     @Severity(SeverityLevel.CRITICAL)
     @Story("UAE Pass implement SOP1, 2 and 3")
-    public void testSuccessfulLoginForLinkedUaePassUser() throws IOException {
+    public void successfulLoginWithLinkedUser() throws IOException {
 
         // Step 1: Create Realm
         Allure.step("Step 1: Create Realm :{medad-allow}", () -> {
@@ -137,7 +142,6 @@ public class LoginViaUaePassTest extends BaseTest {
             System.out.println("✓ UAE Pass identity provider created");
         });
 
-
         // Step 4: Create Test User
         Allure.step("Step 4: Create User :{testUser1}", () -> {
             System.out.println("\nStep 4: Creating test user...");
@@ -162,14 +166,14 @@ public class LoginViaUaePassTest extends BaseTest {
 
     @Test
     @DisplayName("Successful login with manual Path")
-    @Description("This test verifies that a user un linked can successfully log in using valid username and password through UAE Pass integration")
+    @Description("This test verifies that a user not linked can successfully log in using valid username and password through UAE Pass integration")
     @Severity(SeverityLevel.CRITICAL)
     @Story("UAE Pass implement SOP1, 2 and 3")
     public void testCompleteLoginUAEPassUserManualPath() throws IOException {
         System.out.println("\n=== Complete Keycloak Setup Test ===");
 
         // Step 1: Create Realm
-        Allure.step("Step 1: Create Realm :{testRealmName}", () -> {
+        Allure.step("Step 1: Create Realm :{medad-allow}", () -> {
             System.out.println("\nStep 1: Creating realm...");
             //take label from jason file
             JsonNode realmNode = getRealmConfigManager().getRealmNodeByName("realm-configs.json", "medad-allow");
@@ -180,7 +184,7 @@ public class LoginViaUaePassTest extends BaseTest {
         });
 
         // Step 2: Create Client
-        Allure.step("Step 1: Create Client:{}", () -> {
+        Allure.step("Step 2: Create Client:{Test Client}", () -> {
         System.out.println("\nStep 2: Creating client...");
         boolean clientCreated = getClientManager().createClient(
                 testRealmName,TEST_CLIENT_ID,TEST_CLIENT_NAME,TEST_CLIENT_SECRET
@@ -190,7 +194,7 @@ public class LoginViaUaePassTest extends BaseTest {
         });
 
         // Step 3: Create UAE Pass Identity Provider
-        Allure.step("Step 1: Create UAE Pass Identity provider with Manual Linking Only", () -> {
+        Allure.step("Step 3: Create UAE Pass Identity provider with Question Exist user", () -> {
                     System.out.println("\nStep 3: Creating UAE Pass identity provider...");
                     JsonNode idpNode = getIdentityProviderManager().getIdentityProviderNodeByAlias("idp-configs.json",
                             "uaepassManualPath");
@@ -202,10 +206,9 @@ public class LoginViaUaePassTest extends BaseTest {
 
 
         // Step 4: Create Test User
-        Allure.step("Step 1: Create user unlinked :{userID}", () -> {
+        Allure.step("Step 4: Create user unlinked :{testUser2}", () -> {
                     System.out.println("\nStep 4: Creating test user...");
-                    JsonNode userNode = getUserManager().getUserNodeByUsername("users.json", "testuser2");
-                    System.out.println("========================" + userNode);
+                    userNode = getUserManager().getUserNodeByUsername("users.json", "testuser2");
                     String userID = getUserManager().createUser(testRealmName,
                             getUserManager().getStringProperty(userNode, "username"),
                             getUserManager().getStringProperty(userNode, "email"),
@@ -215,6 +218,7 @@ public class LoginViaUaePassTest extends BaseTest {
                     Assertions.assertNotNull(userID, "User should be created");
                     System.out.println("✓ User 'testuser' created" + userID);
                 });
+
             // Step 5: Verify everything exists
             System.out.println("\nStep 5: Verifying setup...");
             assertTrue(getRealmConfigManager().realmExists(testRealmName));
@@ -227,24 +231,116 @@ public class LoginViaUaePassTest extends BaseTest {
             System.out.println("✓ All components verified");
             System.out.println("\n=== Complete Setup Test PASSED ===");
 
-            String medadSSO = createMedadSSO();
 
-            Allure.step("Open Medad SSO URL", () -> {
-                page.navigate(medadSSO);
-            });
 
+        Allure.step("Step 5: Open Medad SSO URL", () -> {
+            String medadUrl = createMedadSSO();
+            page.navigate(medadUrl);
+            captureScreenshot("Medad SSO", page);
+        });
             Allure.step("Login via UAE PASS", () -> {
-                captureScreenshot("Medad SSO", page);
               page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName(UAE_PASS_DISPLAY_NAME).setExact(true)).click();
-
                 captureScreenshot("Manual Link", page);
-             //   page.waitForURL(
-                     //   MEDAD_IDENTITY_BASE_URL + "/realms/" + testRealmName + "/login-actions/first-broker-login" + "**"
-              //  );
+              page.waitForURL(
+                      MEDAD_IDENTITY_BASE_URL + "/realms/" + testRealmName + "/login-actions/first-broker-login" + "**"
+              );
+                // Choose to manually link to an existing account
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Yes")).click();
+
+                // Fill the manual linking form
+
+                page.getByRole(AriaRole.TEXTBOX, new Page.GetByRoleOptions().setName("Username or email")).click();
+                page.getByRole(AriaRole.TEXTBOX, new Page.GetByRoleOptions().setName("Username or email"))
+                        .fill(getUserManager().getStringProperty(userNode, "usename"));
+                page.getByRole(AriaRole.TEXTBOX, new Page.GetByRoleOptions().setName("Password")).click();
+                page.getByRole(AriaRole.TEXTBOX, new Page.GetByRoleOptions().setName("Password"))
+                        .fill(getUserManager().getStringProperty(userNode, "password"));
+
+                Thread.sleep(3000);
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Sign In")).click();
+
             });
+
     }
 
 
+    @Test
+    @DisplayName("Successful Register New UAE PASS User")
+    @Description("This test verifies that a new user can successfully register through UAE Pass integration")
+    @Severity(SeverityLevel.CRITICAL)
+    @Story("UAE Pass implement SOP1, 2 and 3")
+    public void testRegisterUaePassUser() throws IOException, InterruptedException {
+        System.out.println("\n=== Complete Keycloak Setup Test ===");
+
+        // Step 1: Create Realm
+        Allure.step("Step 1: Create Realm :{medad-allow}", () -> {
+            System.out.println("\nStep 1: Creating realm...");
+            //take label from jason file
+            JsonNode realmNode = getRealmConfigManager().getRealmNodeByName("realm-configs.json", "medad-allow");
+            testRealmName = realmNode.get("realm").asText();
+            boolean realmCreated = getRealmConfigManager().createRealmFromNode(realmNode);
+            Assert.assertTrue("Realm should be created", realmCreated);
+            System.out.println("✓ Realm created: " + testRealmName);
+        });
+
+        // Step 2: Create Client
+        Allure.step("Step 2: Create Client:{Test Client}", () -> {
+            System.out.println("\nStep 2: Creating client...");
+            boolean clientCreated = getClientManager().createClient(
+                    testRealmName,TEST_CLIENT_ID,TEST_CLIENT_NAME,TEST_CLIENT_SECRET
+                    ,TEST_CLIENT_OIDC_CALLBACK_URL);
+            assertTrue(clientCreated, "Client should be created");
+            System.out.println("✓ Client 'my-app' created");
+        });
+
+        // Step 3: Create UAE Pass Identity Provider
+        Allure.step("Step 3: Create UAE Pass Identity provider with Register allow Only", () -> {
+            System.out.println("\nStep 3: Creating UAE Pass identity provider...");
+            JsonNode idpNode = getIdentityProviderManager().getIdentityProviderNodeByAlias("idp-configs.json",
+                    "uaepassNewUser");
+            boolean idpUaPassCreated = getIdentityProviderManager().createIdentityProviderFromNodeWithUrls(testRealmName,
+                    idpNode, UAE_PASS_HOST_BASE_URL, UAE_PASS_INTERNAL_BASE_URL);
+            assertTrue(idpUaPassCreated, "UAE Pass identity provider should be created");
+            System.out.println("✓ UAE Pass identity provider created");
+        });
+
+
+        // Step 5: Verify everything exists
+        System.out.println("\nStep 4: Verifying setup...");
+        assertTrue(getRealmConfigManager().realmExists(testRealmName));
+        assertTrue(getClientManager().clientExists(testRealmName, "test-client"));
+        assertTrue(getIdentityProviderManager().identityProviderExists(testRealmName, "uaepassNewUser"));
+
+        openBrowser(MEDAD_IDENTITY_BASE_URL);
+
+
+        System.out.println("✓ All components verified");
+        System.out.println("\n=== Complete Setup Test PASSED ===");
+
+        Allure.step("Step 4: Open Medad SSO URL", () -> {
+            String medadUrl = createMedadSSO();
+            page.navigate(medadUrl);
+            captureScreenshot("Medad SSO", page);
+        });
+        Allure.step ("Step 5:  New user Register automatically ",()-> {
+            page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName(UAE_PASS_DISPLAY_NAME).setExact(true)).click();
+            captureScreenshot("Success register new user ", page);
+            page.waitForURL(
+                    MEDAD_IDENTITY_BASE_URL + "/realms/" + testRealmName + "/login-actions/first-broker-login" + "**"
+            );
+            page.getByRole(AriaRole.CHECKBOX,new Page.GetByRoleOptions().setName("I agreed with all ")).check();
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Sign Up")).click();
+
+            //page.waitForURL(TEST_CLIENT_OIDC_CALLBACK_URL + "**");
+        });
+
+        //Assert that user created
+
+        assertTrue(userManager.userExists(testRealmName,"john_doe@gmail.com"));
+
+
+
+    }
 
 
 

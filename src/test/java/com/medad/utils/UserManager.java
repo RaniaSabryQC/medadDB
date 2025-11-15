@@ -499,6 +499,28 @@ public class UserManager {
             return null;
         }
     }
+    /**
+     * Get user email by username
+     */
+    public String getUserEmail(String realmName, String username) {
+        try {
+            RealmResource realmResource = keycloak.realm(realmName);
+            UsersResource usersResource = realmResource.users();
+
+            List<UserRepresentation> users = usersResource.search(username, true);
+
+            if (users.isEmpty()) {
+                return null;
+            }
+
+            return users.get(0).getId();
+
+        } catch (Exception e) {
+            logger.error("Error getting user ID for username: {}", username, e);
+            return null;
+        }
+    }
+
 
     // ==================== Helper Methods ====================
 
