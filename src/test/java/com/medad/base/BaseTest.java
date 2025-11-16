@@ -102,7 +102,7 @@ public class BaseTest {
 
     //keycloak container setup can be added here
     @SuppressWarnings("resource")
-    private static final GenericContainer<?> medadIdentity =
+    protected static final GenericContainer<?> medadIdentity =
             new GenericContainer<>(new ImageFromDockerfile().withFileFromPath(".", Path.of(".")))
                     .withNetwork(network)
                     .withExposedPorts(
@@ -183,6 +183,10 @@ public class BaseTest {
                 )
         );
         logger.info("keycloak Medad Identity url: {}",MEDAD_IDENTITY_BASE_URL);
+    }
+    @AfterEach
+    void clearRealm() {
+        realmConfigManager.deleteRealm(testRealmName);
     }
 
 

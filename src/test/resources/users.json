@@ -25,23 +25,32 @@
     },
     {
       "username": "Emirateuser",
-      "email": "admin@example.com",
+      "email": "john_doe@gmail.com",
       "firstName": "Admin",
       "lastName": "User",
       "password": "AdminPass789!",
-      "idn": "79869686886868969",
       "enabled": true,
       "emailVerified": true,
-      "federatedIdentity": {
-      "identityProvider": "uaepass",
-      "federatedUserId": "ca33aa7b-0c2f-4e8e-9b22-2eafe1f9234c",
-      "federatedUsername": "ca33aa7b-0c2f-4e8e-9b22-2eafe1f9234c"
-    }
+      "attributes": {
+        "idn": "79869686886868969",
+        "mobile": "+971501234567",
+        "nationality": "AE"
+      }
+    },
+    {
+      "username": "testuser3",
+      "email": "john_doe@gmail.com",
+      "firstName": "Test",
+      "lastName": "User Three",
+      "password": "SecurePass456!",
+      "enabled": true,
+      "emailVerified": false
     }
   ],
   "userMappings": {
     "user1": "testuser1",
     "user2": "testuser2",
-    "admin": "Emirateuser"
+    "admin": "Emirateuser",
+    "unverifyuser": "testuser3"
   }
 }

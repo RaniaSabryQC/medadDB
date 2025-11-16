@@ -165,7 +165,32 @@ public class UserManager {
             user.setLastName(userNode.get("lastName").asText());
             user.setEnabled(userNode.get("enabled").asBoolean());
             user.setEmailVerified(userNode.get("emailVerified").asBoolean());
+//            if (userNode.has("attributes")) {
+//                user.setAttributes(parseAttributes(userNode.get("attributes")));
+//                System.out.println("=========================="+user.toString());
+//            }
 
+            // ⭐ CUSTOM ATTRIBUTES WITH DETAILED LOGGING
+            if (userNode.has("attributes")) {
+                logger.info("  📋 CUSTOM ATTRIBUTES FROM JSON:");
+
+                JsonNode attrsNode = userNode.get("attributes");
+                Map<String, List<String>> attributes = new HashMap<>();
+
+                attrsNode.fields().forEachRemaining(entry -> {
+                    String key = entry.getKey();
+                    String value = entry.getValue().asText();
+                    attributes.put(key, Arrays.asList(value));
+
+                    // ⭐ LOG EACH ATTRIBUTE
+                    logger.info("    - {}: {}", key, value);
+                });
+
+                user.setAttributes(attributes);
+                logger.info("  ✓ Total custom attributes: {}", attributes.size());
+            } else {
+                logger.info("  ⚠️  No custom attributes in JSON");
+            }
             // Create user - returns void
             usersResource.create(user);
 
@@ -206,6 +231,21 @@ public class UserManager {
             logger.error("✗ Unexpected error creating user from JsonNode", e);
             throw new RuntimeException("Failed to create user", e);
         }
+    }
+    /**
+     * Parse attributes from JSON
+     */
+    private Map<String, List<String>> parseAttributes(JsonNode attrsNode) {
+        Map<String, List<String>> attributes = new HashMap<>();
+
+        attrsNode.fields().forEachRemaining(entry -> {
+            String key = entry.getKey();
+            String value = entry.getValue().asText();
+            attributes.put(key, Arrays.asList(value));
+        });
+
+        logger.info("  - Parsed {} custom attributes", attributes.size());
+        return attributes;
     }
 
     // ==================== Manual Create User (Original Method) ====================
@@ -544,5 +584,53 @@ public class UserManager {
             return propertyNode.asBoolean();
         }
         return null;
+    }
+
+    /**
+     * ✅ CORRECT WAY: Add custom attributes to user
+     */
+    public void addUserWithCustomAttributes(String realmName, String username,
+                                            Map<String, String> customAttributes) {
+        try {
+            logger.info("Creating user '{}' with custom attributes", username);
+
+            // Create user representation
+            UserRepresentation user = new UserRepresentation();
+            user.setUsername(username);
+            user.setEnabled(true);
+            user.setEmail(username + "@example.com");
+
+            // ⭐ ADD CUSTOM ATTRIBUTES
+            Map<String, List<String>> attributes = new HashMap<>();
+
+            for (Map.Entry<String, String> entry : customAttributes.entrySet()) {
+                attributes.put(entry.getKey(), Arrays.asList(entry.getValue()));
+            }
+
+            user.setAttributes(attributes);
+
+            // Create user
+            keycloak.realm(realmName).users().create(user);
+
+            logger.info("✓ User created with {} custom attributes", customAttributes.size());
+
+        } catch (Exception e) {
+            logger.error("Error creating user", e);
+            throw new RuntimeException("Failed to create user", e);
+        }
+    }
+
+    /**
+     * Add UAE Pass user attributes
+     */
+    public void addUAEPassUser(String realmName, String username) {
+        Map<String, String> uaePassAttributes = new HashMap<>();
+        uaePassAttributes.put("idn", "784-1234-5678901-2");
+        uaePassAttributes.put("mobile", "+971501234567");
+        uaePassAttributes.put("nationality", "AE");
+        uaePassAttributes.put("fullNameEN", "Ahmed Al Mansouri");
+        uaePassAttributes.put("fullNameAR", "أحمد المنصوري");
+
+        addUserWithCustomAttributes(realmName, username, uaePassAttributes);
     }
 }
