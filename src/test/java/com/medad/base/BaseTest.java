@@ -168,8 +168,8 @@ public class BaseTest {
         // Initialize RealmConfigurationManager and take username and password from env variables
         setupKeycloakAdmin();
         initializeManagers();
-
     }
+
     @BeforeAll
     static void setupMedadIdentity() {
 
@@ -184,10 +184,13 @@ public class BaseTest {
         );
         logger.info("keycloak Medad Identity url: {}",MEDAD_IDENTITY_BASE_URL);
     }
-    @AfterEach
-    void clearRealm() {
-        realmConfigManager.deleteRealm(testRealmName);
+    @AfterAll
+    static void cleanupMedadIdentity() {
+        medadIdentity.stop();
+        database.stop();
     }
+
+
 
 
     @BeforeAll
@@ -202,6 +205,10 @@ public class BaseTest {
         logger.info("UAE Pass host URL: {}", UAE_PASS_HOST_BASE_URL);
         logger.info("UAE Pass internal URL: {}", UAE_PASS_INTERNAL_BASE_URL);
     }
+    @AfterAll
+    static void cleanupUAEPass() {
+        uaepass.stop();
+    }
 
     @BeforeAll
     static void setupRelyingParty() {
@@ -211,11 +218,21 @@ public class BaseTest {
         relyingPartyHTTPClient = ClientBuilder.newClient();
         logger.info("Relying Party client initialized");
     }
+    @AfterAll
+    static void cleanupRelyingParty() {
+        relyingPartyHTTPClient.close();
+        relyingParty.stop();
+    }
 
     @BeforeAll
     static void setupUserAgent() {
         playwright = Playwright.create();
         browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(false).setSlowMo(500));
+    }
+    @AfterAll
+    static void cleanupUserAgent() {
+        browser.close();
+        playwright.close();
     }
 
     @BeforeEach
@@ -242,12 +259,14 @@ public class BaseTest {
             }
         }
     }
-
+    @AfterEach
+    void clearRealm() {
+        realmConfigManager.deleteRealm(testRealmName);
+    }
 
     public void captureScreenshot(String name, Page page) {
         byte[] screenshot = page.screenshot();
         Allure.addAttachment(name, new ByteArrayInputStream(screenshot));
-       // page.screenshot();
     }
 
     public void attachVideo(Path videoPath) {
@@ -334,6 +353,7 @@ public class BaseTest {
                 .queryParam("scope", "openid profile email")
                 .build()
                 .toString();
+
         return authUrl;
     }
 

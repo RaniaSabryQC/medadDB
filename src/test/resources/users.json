@@ -1,7 +1,7 @@
 {
   "users": [
     {
-      "username": "testuser1",
+      "username": "LinkedUser",
       "email": "john_doe@gmail.com",
       "firstName": "John",
       "lastName": "Doe",
@@ -15,7 +15,7 @@
       }
     },
     {
-      "username": "testuser2",
+      "username": "ManualUser",
       "email": "john_doe3@gmail.com",
       "firstName": "Test",
       "lastName": "User Two",
@@ -35,7 +35,7 @@
         "mobile": "+971501234567"
     },
     {
-      "username": "testuser3",
+      "username": "unverifyUser",
       "email": "john_doe@gmail.com",
       "firstName": "Test",
       "lastName": "User Three",
@@ -44,7 +44,7 @@
       "emailVerified": false
     },
     {
-      "username": "testuser4",
+      "username": "level3User",
       "email": "john_doe@gmail.com",
       "firstName": "Test",
       "lastName": "User Three",
@@ -54,7 +54,16 @@
       "emailVerified": true
     },
     {
-      "username": "testuser5",
+      "username": "basicUser",
+      "email": "john_doe@gmail.com",
+      "firstName": "Test",
+      "lastName": "User Three",
+      "password": "SecurePass456!",
+      "enabled": true,
+      "emailVerified": true
+    },
+    {
+      "username": "userHasLink",
       "email": "john_doe@gmail.com",
       "firstName": "Test",
       "lastName": "User Three",
@@ -70,11 +79,12 @@
     }
   ],
   "userMappings": {
-    "user1": "testuser1",
-    "user2": "testuser2",
+    "user1": "LinkedUser",
+    "user2": "ManualUser",
+    "user3": "basicUser",
     "admin": "Emirateuser",
-    "unverifyuser": "testuser3",
-    "userLevel3": "testuser4",
-    "userHasLink": "testuser5"
+    "unverifyuser": "unverifyUser",
+    "userLevel3": "level3User",
+    "userHasLink": "userHasLink"
   }
 }

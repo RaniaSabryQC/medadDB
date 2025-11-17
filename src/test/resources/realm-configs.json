@@ -1,17 +1,17 @@
 {
   "realms": [
     {
-      "realm": "medad-allow",
+      "realm": "medad",
       "enabled": true,
       "registrationAllowed": true,
       "loginTheme": "medad-theme-v5",
       "eventsListeners": ["jboss-logging", "uaepass-event-listener"],
       "adminEventsEnabled": true,
       "adminEventsDetailsEnabled": true,
-      "accessTokenLifespan": 1800
+      "accessTokenLifespan": 3600
     },
     {
-      "realm": "medad-noregistration",
+      "realm": "medad-no-registration",
       "enabled": true,
       "registrationAllowed": false,
       "loginTheme": "medad-theme-v5",
@@ -36,8 +36,8 @@
     }
   ],
   "realmMapping": {
-    "register": "medad-allow",
-    "not allow register": "medad-noregistration",
+    "register": "medad",
+    "not allow register": "medad-no-registration",
     "realm Attributes": "RealmAttribute"
   }
 }

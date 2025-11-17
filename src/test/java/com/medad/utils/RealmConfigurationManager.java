@@ -182,7 +182,7 @@ public class RealmConfigurationManager extends BaseTest {
     }
 
     /**
-     * Get user profile mapping from user-profile-configs.json
+     * Get user profile mapping from user-profile-config.json
      */
     public Map<String, String> getProfileMapping(String jsonFilePath) {
         try {
@@ -211,7 +211,7 @@ public class RealmConfigurationManager extends BaseTest {
 
     /**
      * Get user profile by mapping key
-     * Example: getUserProfileByMappingKey("user-profile-configs.json", "basic")
+     * Example: getUserProfileByMappingKey("user-profile-config.json", "basic")
      * Returns user profile for "medad-allow"
      */
     public JsonNode getUserProfileByMappingKey(String jsonFilePath, String mappingKey) {
