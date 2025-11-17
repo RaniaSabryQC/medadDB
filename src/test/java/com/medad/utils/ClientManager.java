@@ -40,16 +40,6 @@ public class ClientManager {
             RealmResource realmResource = keycloakAdmin.realm(realmName);
             ClientsResource clientsResource = realmResource.clients();
 
-//            ClientRepresentation client = new ClientRepresentation();
-//            client.setClientId(clientId);
-//            client.setEnabled(true);
-//            client.setPublicClient(true);
-//            client.setDirectAccessGrantsEnabled(true);
-//            client.setRedirectUris(redirectUris);
-//            client.setWebOrigins(Arrays.asList("*"));
-//            client.setProtocol("openid-connect");
-
-
             // Create client
             ClientRepresentation client = new ClientRepresentation();
             client.setClientId(clientId);

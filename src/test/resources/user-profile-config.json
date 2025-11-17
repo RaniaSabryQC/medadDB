@@ -1,0 +1,26 @@
+{
+  "attributes": [
+    {
+      "name": "mobile",
+      "displayName": "Mobile",
+      "validations": {},
+      "annotations": {},
+      "permissions": {
+        "view": ["admin", "user"],
+        "edit": ["admin"]
+      },
+      "multivalued": false
+    },
+    {
+      "name": "idn",
+      "displayName": "Emirates ID",
+      "validations": {},
+      "annotations": {},
+      "permissions": {
+        "view": ["admin", "user"],
+        "edit": ["admin"]
+      },
+      "multivalued": false
+    }
+  ]
+}

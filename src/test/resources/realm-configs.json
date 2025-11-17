@@ -19,10 +19,25 @@
       "adminEventsEnabled": true,
       "adminEventsDetailsEnabled": true,
       "accessTokenLifespan": 3600
+    },
+    {
+      "realm": "RealmAttribute",
+      "enabled": true,
+      "registrationAllowed": true,
+      "loginTheme": "medad-theme-v5",
+      "eventsListeners": ["jboss-logging", "uaepass-event-listener"],
+      "adminEventsEnabled": true,
+      "adminEventsDetailsEnabled": true,
+      "accessTokenLifespan": 3600,
+      "attributes": {
+        "userProfileEnabled": "true",
+        "customFeature": "enabled"
+      }
     }
   ],
   "realmMapping": {
     "register": "medad-allow",
-    "not allow register": "medad-noregistration"
+    "not allow register": "medad-noregistration",
+    "realm Attributes": "RealmAttribute"
   }
 }

@@ -36,7 +36,20 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-model-jpa</artifactId>
-            <version>26.0.7</version> <!-- Use your Keycloak version -->
+            <version>26.4.1</version> <!-- Use your Keycloak version -->
+        </dependency>
+        <!-- RestAssured for REST calls -->
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <version>5.4.0</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.keycloak/keycloak-account-ui -->
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-account-ui</artifactId>
+            <version>26.4.1</version>
         </dependency>
         <dependency>
             <groupId>org.yaml</groupId>
@@ -116,7 +129,6 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-admin-client</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.microsoft.playwright</groupId>
@@ -164,6 +176,7 @@
             <groupId>io.github.uchagani</groupId>
             <artifactId>allure-playwright-java</artifactId>
             <version>1.1.0</version> </dependency>
+
     </dependencies>
     <build>
         <plugins>
@@ -172,14 +185,23 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.0</version>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <failOnError>false</failOnError>
+                </configuration>
+            </plugin>
 
             <plugin>
                 <groupId>io.qameta.allure</groupId>
                 <artifactId>allure-maven</artifactId>
                 <version>2.12.0</version>
                 <configuration>
-                    <reportVersion>${allure.version}</reportVersion>
-                    <resultsDirectory>${project.build.directory}/allure-results</resultsDirectory>
+                    <!-- Point to the project root instead of target -->
+                    <resultsDirectory>${project.basedir}/allure-results</resultsDirectory>
+                    <reportDirectory>${project.build.directory}/allure-report</reportDirectory>
                 </configuration>
             </plugin>
             <!-- Configure Surefire to set the logging manager early for forked test JVMs -->

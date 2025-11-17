@@ -2,27 +2,29 @@ package com.medad.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.medad.base.BaseTest;
-import com.medad.config.EnvironmentConfig;
 import org.keycloak.admin.client.Keycloak;
-import org.keycloak.models.jpa.entities.*;
+import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.userprofile.config.UPConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.Container;
-import org.testcontainers.utility.MountableFile;
 
+import static io.restassured.RestAssured.given;
+
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 
 public class RealmConfigurationManager extends BaseTest {
@@ -31,16 +33,16 @@ public class RealmConfigurationManager extends BaseTest {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final Keycloak keycloak;
     private final String serverUrl;
-    private final HttpClient httpClient;  // ⭐
+    private final HttpClient httpClient;
+    private String realmName;// ⭐
 
 
     public RealmConfigurationManager(Keycloak keycloak) {
         this.keycloak = keycloak;
         this.serverUrl = getServerUrlFromKeycloak(keycloak);
         this.httpClient = HttpClient.newHttpClient();
+
     }
-
-
 
     /**
      * ⭐ EXTRACT SERVER URL FROM KEYCLOAK CLIENT
@@ -206,6 +208,7 @@ public class RealmConfigurationManager extends BaseTest {
             return new java.util.HashMap<>();
         }
     }
+
     /**
      * Get user profile by mapping key
      * Example: getUserProfileByMappingKey("user-profile-configs.json", "basic")
@@ -273,6 +276,7 @@ public class RealmConfigurationManager extends BaseTest {
             return null;
         }
     }
+
     /**
      * Create realm from JSON node
      */
@@ -310,298 +314,321 @@ public class RealmConfigurationManager extends BaseTest {
         }
     }
 
-    /**
-     * Create realm and apply user profile from separate files
-     */
-    public boolean createRealmWithUserProfile(String realmConfigFile, String userProfileConfigFile, String realmKey) {
-        try {
-            logger.info("Creating realm with user profile for key: {}", realmKey);
-
-            // Step 1: Get realm configuration
-            JsonNode realmNode = getRealmNodeByName(realmConfigFile, realmKey);
-            String realmName = realmNode.get("realm").asText();
-
-            // Step 2: Create realm
-            boolean created = createRealmFromNode(realmNode);
-
-            if (!created) {
-                logger.warn("Realm already exists, skipping user profile configuration");
-                return false;
-            }
-
-            // Step 3: Get user profile configuration
-            JsonNode userProfileNode = getUserProfileNodeByRealmName(userProfileConfigFile, realmName);
-
-            // Step 4: Apply user profile if exists
-            if (userProfileNode != null) {
-                applyUserProfile(realmName, userProfileNode);
-            } else {
-                logger.info("No user profile configuration found for realm '{}'", realmName);
-            }
-
-            return true;
-
-        } catch (Exception e) {
-            logger.error("Error creating realm with user profile", e);
-            throw new RuntimeException("Failed to create realm with user profile", e);
-        }
-    }
-    /**
-     * ✅ WORKING SOLUTION: Configure User Profile by copying file to container
-     */
-    public void configureUserProfileViaFile(String realmName, String jsonFilePath) {
-        try {
-            logger.info("Configuring User Profile for realm '{}' via file", realmName);
-
-            // Read JSON from resources
-            InputStream inputStream = getClass().getClassLoader().getResourceAsStream(jsonFilePath);
-            if (inputStream == null) {
-                throw new RuntimeException("File not found: " + jsonFilePath);
-            }
-
-            String json = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-
-            // Create temp file
-            Path tempFile = Files.createTempFile("user-profile-", ".json");
-            Files.writeString(tempFile, json);
-
-            // Copy to container
-            medadIdentity.copyFileToContainer(
-                    MountableFile.forHostPath(tempFile),
-                    "/tmp/user-profile.json"
-            );
-
-            // Execute kcadm.sh command
-            Container.ExecResult result = medadIdentity.execInContainer(
-                    "/opt/keycloak/bin/kcadm.sh",
-                    "update",
-                    "users/profile",
-                    "-r", realmName,
-                    "-f", "/tmp/user-profile.json",
-                    "--server", "http://localhost:8080",
-                    "--realm", "master",
-                    "--user", EnvironmentConfig.DOTENV.get("KC_BOOTSTRAP_ADMIN_USERNAME"),
-                    "--password", EnvironmentConfig.DOTENV.get("KC_BOOTSTRAP_ADMIN_PASSWORD")
-            );
-
-            // Clean up
-            Files.delete(tempFile);
-
-            if (result.getExitCode() == 0) {
-                logger.info("✓ User Profile configured successfully");
-                logger.info(result.getStdout());
-            } else {
-                logger.error("Failed to configure User Profile");
-                logger.error("Exit code: {}", result.getExitCode());
-                logger.error("Error: {}", result.getStderr());
-                throw new RuntimeException("Failed to configure User Profile");
-            }
-
-        } catch (Exception e) {
-            logger.error("Error configuring User Profile via file", e);
-            throw new RuntimeException("Failed to configure User Profile", e);
-        }
-    }
-    /**
-     * ✅ DISABLE User Profile to allow free-form user attributes
-     * This is good for testing environments
-     */
-    public void disableUserProfile(String realmName) {
-        try {
-            logger.info("Disabling User Profile for realm '{}'", realmName);
-
-            RealmRepresentation realm = keycloak.realm(realmName).toRepresentation();
-
-            Map<String, String> attributes = realm.getAttributes();
-            if (attributes == null) {
-                attributes = new HashMap<>();
-            }
-
-            // ⭐ DISABLE USER PROFILE
-            attributes.put("userProfileEnabled", "false");
-
-            realm.setAttributes(attributes);
-            keycloak.realm(realmName).update(realm);
-
-            logger.info("✓ User Profile disabled - you can now add any user attributes freely");
-
-        } catch (Exception e) {
-            logger.error("Error disabling User Profile", e);
-            throw new RuntimeException("Failed to disable User Profile", e);
-        }
-    }
-    /**
-     * Create realm and apply user profile using mapping keys
-     */
-    public boolean createRealmWithUserProfileByMappingKey(String realmConfigFile, String userProfileConfigFile,
-                                                          String realmMappingKey, String profileMappingKey) {
-        try {
-            logger.info("Creating realm using mapping keys: realm='{}', profile='{}'",
-                    realmMappingKey, profileMappingKey);
-
-            // Step 1: Get realm by mapping key
-            JsonNode realmNode = getRealmNodeByMappingKey(realmConfigFile, realmMappingKey);
-            String realmName = realmNode.get("realm").asText();
-
-            // Step 2: Create realm
-            boolean created = createRealmFromNode(realmNode);
-
-            if (!created) {
-                logger.warn("Realm already exists");
-                return false;
-            }
-
-            // Step 3: Get user profile by mapping key
-            JsonNode userProfileNode = getUserProfileByMappingKey(userProfileConfigFile, profileMappingKey);
-
-            // Step 4: Apply user profile
-            if (userProfileNode != null) {
-                applyUserProfile(realmName, userProfileNode);
-            }
-
-            return true;
-
-        } catch (Exception e) {
-            logger.error("Error creating realm with user profile by mapping key", e);
-            throw new RuntimeException("Failed to create realm", e);
-        }
+    private String urlEncode(String value) {
+        return URLEncoder.encode(value);
     }
 
-    /**
-     * Apply user profile configuration to existing realm
-     */
-    public void applyUserProfile(String realmName, JsonNode userProfileNode) {
-        try {
-            logger.info("Applying user profile to realm '{}'", realmName);
+    public void addAttributesToUserProfile(String realmName, JsonNode configNode) throws Exception {
+        // 1. Get access token
+        String accessToken = getAccessToken();
 
-            // Get current profile
-            JsonNode currentProfile = getCurrentUserProfile(realmName);
+        // 2. Get existing user profile configuration
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest getRequest = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/admin/realms/" + realmName + "/users/profile"))
+                .header("Authorization", "Bearer " + accessToken)
+                .header("Content-Type", "application/json")
+                .GET()
+                .build();
 
-            // Merge with new configuration
-            ObjectNode mergedProfile;
-            if (currentProfile != null && currentProfile.isObject()) {
-                mergedProfile = (ObjectNode) currentProfile;
-            } else {
-                mergedProfile = objectMapper.createObjectNode();
+        HttpResponse<String> getResponse = client.send(getRequest, HttpResponse.BodyHandlers.ofString());
+
+        if (getResponse.statusCode() != 200) {
+            throw new RuntimeException("Failed to get user profile: " + getResponse.statusCode() + " - " + getResponse.body());
+        }
+
+        // 3. Parse existing configuration
+        JsonNode existingConfig = objectMapper.readTree(getResponse.body());
+        ArrayNode existingAttributes = (ArrayNode) existingConfig.get("attributes");
+        if (existingAttributes == null) {
+            existingAttributes = objectMapper.createArrayNode();
+        }
+
+        // 4. Extract attributes from config node
+        ArrayNode newAttributes = objectMapper.createArrayNode();
+
+        if (configNode.has("attributes")) {
+            JsonNode attributesNode = configNode.get("attributes");
+            if (attributesNode != null && attributesNode.isArray()) {
+                newAttributes = (ArrayNode) attributesNode;
             }
+        } else if (configNode.has("name")) {
+            // Single attribute
+            newAttributes.add(configNode);
+        } else {
+            throw new IllegalArgumentException("Invalid config format. Must contain 'attributes' array or be a single attribute");
+        }
 
-            // Update attributes
-            if (userProfileNode.has("attributes")) {
-                mergedProfile.set("attributes", userProfileNode.get("attributes"));
-            }
+        // 5. Create updated attributes array starting with existing
+        ArrayNode updatedAttributes = objectMapper.createArrayNode();
+        for (JsonNode attr : existingAttributes) {
+            updatedAttributes.add(attr);
+        }
 
-            // Ensure groups exist
-            if (!mergedProfile.has("groups")) {
-                mergedProfile.set("groups", objectMapper.createArrayNode());
-            }
+        // 6. Add/update each new attribute (remove duplicates by name)
+        for (JsonNode newAttribute : newAttributes) {
+            String newAttrName = newAttribute.get("name").asText();
 
-            // Send to Keycloak
-            String json = objectMapper.writeValueAsString(mergedProfile);
-
-            // ⭐ TRY TO UPDATE - BUT DON'T FAIL IF IT DOESN'T WORK
-            boolean success = updateUserProfile(realmName, json);
-
-            if (success && userProfileNode.has("attributes")) {
-                int count = userProfileNode.get("attributes").size();
-                logger.info("✓ User profile applied with {} attribute(s)", count);
-
-                // Log attribute names
-                for (JsonNode attr : userProfileNode.get("attributes")) {
-                    if (attr.has("name")) {
-                        logger.info("  - {}", attr.get("name").asText());
-                    }
+            // Remove existing attribute with same name
+            ArrayNode temp = objectMapper.createArrayNode();
+            for (JsonNode attr : updatedAttributes) {
+                if (!attr.get("name").asText().equals(newAttrName)) {
+                    temp.add(attr);
                 }
             }
+            updatedAttributes = temp;
 
-        } catch (Exception e) {
-            logger.warn("⚠️  Could not apply user profile configuration: {}", e.getMessage());
-            logger.warn("⚠️  User profile attributes must be configured manually");
-            // ⭐ DON'T THROW - JUST LOG WARNING
+            // Add new attribute
+            updatedAttributes.add(newAttribute);
+            System.out.println("Added/Updated attribute: " + newAttrName);
+        }
+
+        // 7. Update the config
+        ObjectNode updatedConfig = (ObjectNode) existingConfig;
+        updatedConfig.set("attributes", updatedAttributes);
+
+        // 8. Convert to JSON string
+        String updatedConfigJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(updatedConfig);
+
+        // 9. Send PUT request
+        HttpRequest putRequest = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/admin/realms/" + realmName + "/users/profile"))
+                .header("Authorization", "Bearer " + accessToken)
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(updatedConfigJson))
+                .build();
+
+        HttpResponse<String> putResponse = client.send(putRequest, HttpResponse.BodyHandlers.ofString());
+
+        if (putResponse.statusCode() == 200 || putResponse.statusCode() == 204) {
+            System.out.println("✓ User profile attributes added successfully");
+        } else {
+            System.err.println("✗ Failed: " + putResponse.statusCode() + " - " + putResponse.body());
+            throw new RuntimeException("Failed to update user profile: " + putResponse.statusCode());
         }
     }
 
-    // ==================== USER PROFILE API CALLS ====================
-
     /**
-     * Get current user profile from Keycloak
+     * Load user profile attributes from JSON file and apply to realm
      */
-    private JsonNode getCurrentUserProfile(String realmName) {
-        try {
-            String url = serverUrl + "/admin/realms/" + realmName + "/users/profile";
-            System.out.println("------------------"+url);
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .header("Authorization", "Bearer " + keycloak.tokenManager().getAccessTokenString())
-                    .GET()
-                    .build();
+    public void addAttributesFromFile(String realmName, String filePath) throws Exception {
+        // Read JSON file
+        File file = new File(filePath);
+        JsonNode configNode = objectMapper.readTree(file);
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        // Apply to realm
+        addAttributesToUserProfile(realmName, configNode);
+    }
+    public void addAttributesFromResource(String realmName, String resourcePath) throws Exception {
+        // Load from classpath (no leading slash needed)
+        InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath);
 
-            if (response.statusCode() == 200) {
-                return objectMapper.readTree(response.body());
+        if (inputStream == null) {
+            throw new IllegalArgumentException("Resource not found in classpath: " + resourcePath);
+        }
+
+        JsonNode configNode = objectMapper.readTree(inputStream);
+
+        // Apply to realm
+        addAttributesToUserProfile(realmName, configNode);
+    }
+    public void configureUserProfileWithMultiAttributes(String realmName) throws Exception {
+        // 1. Get access token
+        String accessToken = getAccessToken();
+
+        // 2. Get existing user profile configuration
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest getRequest = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/admin/realms/" + realmName + "/users/profile"))
+                .header("Authorization", "Bearer " + accessToken)
+                .header("Content-Type", "application/json")
+                .GET()
+                .build();
+
+        HttpResponse<String> getResponse = client.send(getRequest, HttpResponse.BodyHandlers.ofString());
+
+        if (getResponse.statusCode() != 200) {
+            throw new RuntimeException("Failed to get user profile: " + getResponse.statusCode() + " - " + getResponse.body());
+        }
+
+        // 3. Parse existing configuration
+        JsonNode existingConfig = objectMapper.readTree(getResponse.body());
+
+        // 4. Get existing attributes array
+        ArrayNode existingAttributes = (ArrayNode) existingConfig.get("attributes");
+        if (existingAttributes == null) {
+            existingAttributes = objectMapper.createArrayNode();
+        }
+
+        // 2. Prepare user profile JSON
+        String mobileAttributeJson = """
+                {
+                  "name": "mobile",
+                  "displayName": "mobile",
+                  "validations": {},
+                  "annotations": {},
+                  "permissions": {
+                    "view": ["admin", "user"],
+                    "edit": ["admin"]
+                  },
+                  "multivalued": false
+                }
+                """;
+        JsonNode newAttribute = objectMapper.readTree(mobileAttributeJson);
+        System.out.println(new ObjectMapper().writeValueAsString(newAttribute));
+        // 6. Remove mobile attribute if it already exists (to avoid duplicates)
+        ArrayNode updatedAttributes = objectMapper.createArrayNode();
+        for (JsonNode attr : existingAttributes) {
+            if (!attr.get("name").asText().equals("mobile")) {
+                updatedAttributes.add(attr);
             }
+        }
 
-            logger.warn("Could not get current user profile. Status: {}", response.statusCode());
-            return null;
+        // 7. Add the new mobile attribute
+        updatedAttributes.add(newAttribute);
 
-        } catch (Exception e) {
-            logger.warn("Could not get current user profile: {}", e.getMessage());
-            return null;
+        // 8. Update the config with merged attributes
+        ObjectNode updatedConfig = (ObjectNode) existingConfig;
+        updatedConfig.set("attributes", updatedAttributes);
+
+        // 9. Convert back to JSON string
+        String updatedConfigJson = objectMapper.writeValueAsString(updatedConfig);
+
+        // 10. Send PUT request to update user profile
+        HttpRequest putRequest = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/admin/realms/" + realmName + "/users/profile"))
+                .header("Authorization", "Bearer " + accessToken)
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(updatedConfigJson))
+                .build();
+
+        HttpResponse<String> putResponse = client.send(putRequest, HttpResponse.BodyHandlers.ofString());
+
+        if (putResponse.statusCode() == 200 || putResponse.statusCode() == 204) {
+            System.out.println("Mobile attribute added successfully to user profile");
+        } else {
+            System.err.println("Failed: " + putResponse.statusCode() + " - " + putResponse.body());
         }
     }
 
-    /**
-     * Update user profile via REST API
-     */
-    private boolean  updateUserProfile(String realmName, String jsonPayload) {
+    public void configureUserProfile(String realmName) throws Exception {
+        // 1. Get access token
+        String accessToken = getAccessToken();
+
+        // 2. Get existing user profile configuration
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest getRequest = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/admin/realms/" + realmName + "/users/profile"))
+                .header("Authorization", "Bearer " + accessToken)
+                .header("Content-Type", "application/json")
+                .GET()
+                .build();
+
+        HttpResponse<String> getResponse = client.send(getRequest, HttpResponse.BodyHandlers.ofString());
+
+        if (getResponse.statusCode() != 200) {
+            throw new RuntimeException("Failed to get user profile: " + getResponse.statusCode() + " - " + getResponse.body());
+        }
+
+        // 3. Parse existing configuration
+        JsonNode existingConfig = objectMapper.readTree(getResponse.body());
+
+        // 4. Get existing attributes array
+        ArrayNode existingAttributes = (ArrayNode) existingConfig.get("attributes");
+        if (existingAttributes == null) {
+            existingAttributes = objectMapper.createArrayNode();
+        }
+
+        // 2. Prepare user profile JSON
+        String mobileAttributeJson = """
+                {
+                  "name": "mobile",
+                  "displayName": "mobile",
+                  "validations": {},
+                  "annotations": {},
+                  "permissions": {
+                    "view": ["admin", "user"],
+                    "edit": ["admin"]
+                  },
+                  "multivalued": false
+                }
+                """;
+        JsonNode newAttribute = objectMapper.readTree(mobileAttributeJson);
+        System.out.println(new ObjectMapper().writeValueAsString(newAttribute));
+        // 6. Remove mobile attribute if it already exists (to avoid duplicates)
+        ArrayNode updatedAttributes = objectMapper.createArrayNode();
+        for (JsonNode attr : existingAttributes) {
+            if (!attr.get("name").asText().equals("mobile")) {
+                updatedAttributes.add(attr);
+            }
+        }
+
+        // 7. Add the new mobile attribute
+        updatedAttributes.add(newAttribute);
+
+        // 8. Update the config with merged attributes
+        ObjectNode updatedConfig = (ObjectNode) existingConfig;
+        updatedConfig.set("attributes", updatedAttributes);
+
+        // 9. Convert back to JSON string
+        String updatedConfigJson = objectMapper.writeValueAsString(updatedConfig);
+
+        // 10. Send PUT request to update user profile
+        HttpRequest putRequest = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/admin/realms/" + realmName + "/users/profile"))
+                .header("Authorization", "Bearer " + accessToken)
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(updatedConfigJson))
+                .build();
+
+        HttpResponse<String> putResponse = client.send(putRequest, HttpResponse.BodyHandlers.ofString());
+
+        if (putResponse.statusCode() == 200 || putResponse.statusCode() == 204) {
+            System.out.println("Mobile attribute added successfully to user profile");
+        } else {
+            System.err.println("Failed: " + putResponse.statusCode() + " - " + putResponse.body());
+        }
+    }
+
+    private String getAccessToken() throws Exception {
+        String tokenRequestBody = "grant_type=password&client_id=admin-cli&username=admin&password=admin";
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/realms/master/protocol/openid-connect/token"))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(tokenRequestBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Failed to get access token: " + response.statusCode() + " - " + response.body());
+        }
+
+        // Parse JSON response properly using Jackson
         try {
-            String url = serverUrl + "/admin/realms/" + realmName + "/users/profile";
-
-            logger.debug("PUT {}", url);
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + keycloak.tokenManager().getAccessTokenString())
-                    .PUT(HttpRequest.BodyPublishers.ofString(jsonPayload))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            int status = response.statusCode();
-
-            if (status >= 200 && status < 300) {
-                logger.info("✓ User profile updated successfully");
-                return true;
+            JsonNode jsonNode = objectMapper.readTree(response.body());
+            if (jsonNode.has("access_token")) {
+                return jsonNode.get("access_token").asText();
             } else {
-                logger.warn("⚠️  Failed to update user profile. Status: {}", status);
-                logger.warn("⚠️  Response: {}", response.body());
-                logger.debug("Attempted payload: {}", jsonPayload);
-                logger.warn("⚠️  User Profile must be configured manually in Keycloak Admin Console");
-                logger.warn("⚠️  Path: Realm Settings > User Profile > Attributes");
-                return false;
+                throw new RuntimeException("No access_token in response: " + response.body());
             }
-
         } catch (Exception e) {
-            logger.warn("⚠️  Error calling User Profile API: {}", e.getMessage());
-            logger.warn("⚠️  User Profile configuration skipped - configure manually if needed");
-            return false;
+            throw new RuntimeException("Failed to parse token response: " + response.body(), e);
         }
     }
-
 
     /**
      * Delete realm
      */
-    public boolean deleteRealm(String realmName) {
+    public void deleteRealm(String realmName) {
         try {
             logger.info("Deleting realm '{}'", realmName);
             keycloak.realms().realm(realmName).remove();
             logger.info("✓ Realm '{}' deleted successfully", realmName);
-            return true;
         } catch (Exception e) {
             logger.error("✗ Error deleting realm '{}'", realmName, e);
-            return false;
         }
     }
 
@@ -638,5 +665,17 @@ public class RealmConfigurationManager extends BaseTest {
             throw new RuntimeException("Failed to read realm", e);
         }
     }
+
+
+    //===============================================
+
+    /**
+     * Read JSON configuration file
+     */
+    private JsonNode readJsonFile(String filePath) throws IOException {
+        File jsonFile = new File(filePath);
+        return objectMapper.readTree(jsonFile);
+    }
+
 
 }

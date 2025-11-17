@@ -31,11 +31,8 @@
       "password": "AdminPass789!",
       "enabled": true,
       "emailVerified": true,
-      "attributes": {
         "idn": "79869686886868969",
-        "mobile": "+971501234567",
-        "nationality": "AE"
-      }
+        "mobile": "+971501234567"
     },
     {
       "username": "testuser3",
@@ -45,12 +42,39 @@
       "password": "SecurePass456!",
       "enabled": true,
       "emailVerified": false
+    },
+    {
+      "username": "testuser4",
+      "email": "john_doe@gmail.com",
+      "firstName": "Test",
+      "lastName": "User Three",
+      "password": "SecurePass456!",
+      "mobile": "+971501234567",
+      "enabled": true,
+      "emailVerified": true
+    },
+    {
+      "username": "testuser5",
+      "email": "john_doe@gmail.com",
+      "firstName": "Test",
+      "lastName": "User Three",
+      "password": "SecurePass456!",
+      "mobile": "+971501234567",
+      "enabled": true,
+      "emailVerified": true,
+      "federatedIdentity": {
+        "identityProvider": "uaepass",
+        "federatedUserId": "ca33aa7b-0c2f-4e8e-9b22-2eafe1f9235c",
+        "federatedUsername": "ca33aa7b-0c2f-4e8e-9b22-2eafe1f9235c"
+      }
     }
   ],
   "userMappings": {
     "user1": "testuser1",
     "user2": "testuser2",
     "admin": "Emirateuser",
-    "unverifyuser": "testuser3"
+    "unverifyuser": "testuser3",
+    "userLevel3": "testuser4",
+    "userHasLink": "testuser5"
   }
 }

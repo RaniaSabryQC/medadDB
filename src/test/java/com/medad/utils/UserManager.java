@@ -232,6 +232,86 @@ public class UserManager {
             throw new RuntimeException("Failed to create user", e);
         }
     }
+
+    /**
+     * Create user from JsonNode
+     * @param realmName Realm name where user will be created
+     * @param userNode JsonNode containing user configuration
+     * @return true if created successfully, false if already exists
+     */
+    public String createCustomUserFromNode(String realmName, JsonNode userNode) {
+        try {
+            String username = userNode.get("username").asText();
+            logger.info("Creating user '{}' in realm '{}' from JsonNode", username, realmName);
+
+            RealmResource realmResource = keycloak.realm(realmName);
+            UsersResource usersResource = realmResource.users();
+
+            // Build UserRepresentation from JsonNode
+            UserRepresentation user = new UserRepresentation();
+
+            user.setUsername(userNode.get("username").asText());
+            user.setEmail(userNode.get("email").asText());
+            user.setFirstName(userNode.get("firstName").asText());
+            user.setLastName(userNode.get("lastName").asText());
+            user.setEnabled(userNode.get("enabled").asBoolean());
+            user.setEmailVerified(userNode.get("emailVerified").asBoolean());
+
+            // Set custom attributes from JsonNode
+            Map<String, List<String>> attributes = new HashMap<>();
+
+            // Get mobile from JSON if it exists
+            if (userNode.has("mobile") && !userNode.get("mobile").isNull()) {
+                attributes.put("mobile", Arrays.asList(userNode.get("mobile").asText()));
+            }
+
+            // Get idn (Emirates ID) from JSON if it exists
+            if (userNode.has("idn") && !userNode.get("idn").isNull()) {
+                attributes.put("idn", Arrays.asList(userNode.get("idn").asText()));
+            }
+
+            user.setAttributes(attributes);
+
+            // Create user - returns void
+            usersResource.create(user);
+
+            // Set password
+            String password = userNode.get("password").asText();
+            String userId = getUserId(realmName, username);
+            if (userId != null) {
+                setUserPassword(realmName, userId, password);
+            }
+
+            if (userNode.has("federatedIdentity")) {
+                JsonNode fedIdentityNode = userNode.get("federatedIdentity");
+                createFederatedIdentityFromNode(realmName, userId, fedIdentityNode);
+            }
+
+            logger.info("✓ Custom User '{}' created successfully", username);
+            return userId;
+
+        } catch (ClientErrorException e) {
+            int statusCode = e.getResponse().getStatus();
+            String username = userNode.get("username").asText();
+
+            if (statusCode == 409) {
+                logger.warn("⚠ Custom User '{}' already exists in realm '{}'", username, realmName);
+                return null;
+            } else {
+                logger.error("✗ Error creating user '{}'. Status: {}", username, statusCode, e);
+                throw new RuntimeException("Failed to create user. Status: " + statusCode, e);
+            }
+
+        } catch (WebApplicationException e) {
+            logger.error("✗ Error creating user from JsonNode", e);
+            throw new RuntimeException("Failed to create user", e);
+
+        } catch (Exception e) {
+            logger.error("✗ Unexpected error creating user from JsonNode", e);
+            throw new RuntimeException("Failed to create user", e);
+        }
+    }
+
     /**
      * Parse attributes from JSON
      */
@@ -397,12 +477,54 @@ public class UserManager {
 
             realmResource.users().get(userId).addFederatedIdentity(identityProvider, link).close();
 
+
             logger.info("✓ Federated identity link created");
             return true;
 
         } catch (Exception e) {
             logger.error("✗ Error creating federated identity link", e);
             return false;
+        }
+    }
+
+    /**
+     * Get federated identity that was automatically created by IDP login
+     * @param realmName - The realm name
+     * @param username - The username to look up
+     * @param identityProviderAlias - The IDP alias (e.g., "uaepass")
+     * @return The federated user ID from the external IDP
+     */
+    public String getFederatedUserIdByUsername(String realmName, String username, String identityProviderAlias) {
+        try {
+            // 1. Get user ID by username
+            String userId = getUserId(realmName, username);
+
+            if (userId == null) {
+                logger.warn("User '{}' not found in realm '{}'", username, realmName);
+                return null;
+            }
+
+            // 2. Get federated identities for this user
+            RealmResource realmResource = keycloak.realm(realmName);
+            List<FederatedIdentityRepresentation> identities =
+                    realmResource.users().get(userId).getFederatedIdentity();
+
+            // 3. Find the identity for the specified IDP
+            for (FederatedIdentityRepresentation identity : identities) {
+                if (identity.getIdentityProvider().equals(identityProviderAlias)) {
+                    String federatedId = identity.getUserId();
+                    logger.info("Found federated identity for '{}': IDP='{}', FederatedID='{}'",
+                            username, identityProviderAlias, federatedId);
+                    return federatedId;
+                }
+            }
+
+            logger.warn("No federated identity found for user '{}' with IDP '{}'", username, identityProviderAlias);
+            return null;
+
+        } catch (Exception e) {
+            logger.error("✗ Error getting federated identity", e);
+            return null;
         }
     }
 
@@ -576,6 +698,20 @@ public class UserManager {
     }
 
     /**
+     * Get string property from nested JsonNode
+     */
+    public String getNestedStringProperty(JsonNode node, String parentProperty, String childProperty) {
+        JsonNode parentNode = node.get(parentProperty);
+        if (parentNode != null && !parentNode.isNull()) {
+            JsonNode childNode = parentNode.get(childProperty);
+            if (childNode != null && !childNode.isNull()) {
+                return childNode.asText();
+            }
+        }
+        return null;
+    }
+
+    /**
      * Get boolean property from JsonNode
      */
     public Boolean getBooleanProperty(JsonNode node, String propertyName) {
@@ -620,17 +756,5 @@ public class UserManager {
         }
     }
 
-    /**
-     * Add UAE Pass user attributes
-     */
-    public void addUAEPassUser(String realmName, String username) {
-        Map<String, String> uaePassAttributes = new HashMap<>();
-        uaePassAttributes.put("idn", "784-1234-5678901-2");
-        uaePassAttributes.put("mobile", "+971501234567");
-        uaePassAttributes.put("nationality", "AE");
-        uaePassAttributes.put("fullNameEN", "Ahmed Al Mansouri");
-        uaePassAttributes.put("fullNameAR", "أحمد المنصوري");
 
-        addUserWithCustomAttributes(realmName, username, uaePassAttributes);
-    }
 }
